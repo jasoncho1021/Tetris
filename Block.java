@@ -2,8 +2,9 @@ package tetris;
 
 public abstract class Block {
 
-	private int x;
-	private int y;
+	// center position
+	int x;
+	int y;
 
 	Block(int x, int y) {
 		this.x = x;
@@ -14,16 +15,10 @@ public abstract class Block {
 		y++;
 	}
 
-	void rotate(boolean isClockWise) {
-		if (isClockWise) {
-			rotateClockWise();
-		} else {
-			rotateAntiClockWise();
-		}
-	}
-
 	abstract void rotateClockWise();
 
 	abstract void rotateAntiClockWise();
+
+	abstract void setBlockToMap(boolean[][] map);
 
 }
