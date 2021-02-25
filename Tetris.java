@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 	i=1
 	while [ "$i" -le $1 ]; do
 		tput cuu1
+		tput el
 		i=$(( i + 1 ))
 	done
 
@@ -36,55 +37,53 @@ public class Tetris {
 	}
 
 	public static void main(String[] args) {
-		printAndListen();
+		Tetris tetris = new Tetris();
+		tetris.printAndListen();
 	}
 
-	static void printAndListen() {
-		NumbersConsole numberConsole = new NumbersConsole();
+	private void printAndListen() {
+		NumbersConsole numberConsole = new NumbersConsole(this);
 		Thread keyListeningThread = new Thread(numberConsole);
 		keyListeningThread.start();
 
-		printmap(numberConsole);
+		System.out.print("first:from:xx\nsec:from:zzzzzz\n");
+
+		for (int i = 0; i < 5; i++) {
+			try {
+				Thread.sleep(2000);
+				printmap(numberConsole.getInput());
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 
 		numberConsole.cancel();
 	}
 
-	/*
-	 *   print -> data( <- nc ) ,,   print vs key 
-	 *   0. 키눌림 
-	 *   1. 데이터 변환
-	 *   2. 눌린 키 값 초기화.
-	 */
-	static void printmap(NumbersConsole nc) {
-		for (int i = 0; i < 5; i++) {
-			String input = nc.getInput();
-			System.out.print("first:" + input + "\n" + "sec:" + input + "\n");
-			try {
-				Thread.sleep(2000);
-				// 콘솔에서 실행시 eclipse와 달리 /bin/bin/ 2번으로 인식 된다.
-				// String userDirectory = System.getProperty("user.dir"); 
-				String home = System.getenv("HOME");
-				String path = home + "/multilineEraser.sh";
-				int rowsToErase = 2;
+	void printmap(String input) {
+		int rowsToErase = 2;
+		erase(rowsToErase);
+		System.out.print("first:" + input + "\n" + "sec:" + input + "\n");
+	}
 
-				String[] cmd = { path, String.valueOf(rowsToErase) };
+	private void erase(int rowsToErase) {
+		String home = System.getenv("HOME");
+		String path = home + "/multilineEraser.sh";
 
-				try {
-					Process process = Runtime.getRuntime().exec(cmd);
-					BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-					StringBuilder builder = new StringBuilder();
-					String line = null;
-					while ((line = reader.readLine()) != null) {
-						builder.append(line);
-					}
-					String result = builder.toString();
-					System.out.print(result);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		String[] cmd = { path, String.valueOf(rowsToErase) };
+
+		try {
+			Process process = Runtime.getRuntime().exec(cmd);
+			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+			StringBuilder builder = new StringBuilder();
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				builder.append(line);
 			}
+			String result = builder.toString();
+			System.out.print(result);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 

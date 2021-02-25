@@ -8,12 +8,20 @@ public class NumbersConsole implements Runnable {
 
 	private String ttyConfig;
 
-	private String input = "";
+	private String input = "iinit";
 
 	private boolean isCanceled = false;
 
+	private Tetris tetris;
+
+	NumbersConsole(Tetris tetris) {
+		this.tetris = tetris;
+	}
+
 	public String getInput() {
-		return input;
+		String temp = input;
+		input = "";
+		return temp;
 	}
 
 	public void cancel() {
@@ -30,9 +38,10 @@ public class NumbersConsole implements Runnable {
 					int c = System.in.read();
 					input = String.valueOf((char) c);
 					//System.out.println(input);
-					if (c == 0x1B) {
+					tetris.printmap("from:"+getInput());
+/*					if (c == 0x1B) {
 						break;
-					}
+					}*/
 				}
 
 			} // end while
