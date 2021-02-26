@@ -2,6 +2,8 @@ package tetris;
 
 public abstract class Block {
 
+	static int height;
+	static int width;
 	// center position
 	int x;
 	int y;
@@ -12,13 +14,31 @@ public abstract class Block {
 	}
 
 	void dropY() {
-		y++;
+		++y;
+	}
+
+	void recoverY() {
+		--y;
+	}
+
+	void moveLeft() {
+		if (!isWall(x-1)) {
+			--x;
+		}
+	}
+
+	void moveRight() {
+		if (!isWall(x+1)) {
+			++x;
+		}
 	}
 
 	abstract void rotateClockWise();
 
 	abstract void rotateAntiClockWise();
 
-	abstract void setBlockToMap(boolean[][] map);
+	abstract boolean setBlockToMap(boolean[][] map);
+
+	abstract boolean isWall(int nx);
 
 }

@@ -34,11 +34,11 @@ public class Tetris {
 
 	public static void main(String[] args) {
 		Tetris tetris = new Tetris();
-		tetris.init();
+		tetris.initBorder();
 		tetris.printAndListen();
 	}
 
-	private void init() {
+	private void initBorder() {
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
 				if (col == 0 || col == (width - 1)) {
@@ -72,20 +72,29 @@ public class Tetris {
 		Thread keyListeningThread = new Thread(numberConsole);
 		keyListeningThread.start();
 
+		block.height = height;
+		block.width = width;
 		// 블럭 착륙할 때마다 랜덤으로 숫자 뽑는다. 숫자와 맵핑되는 BlockA.class 불러와서 객체생성하기.
-		block = new BlockA(width / 2, 0);
-		block.setBlockToMap(map);
-		System.out.print(drawMap());
 
-		for (int i = 0; i < height; i++) {
-			try {
-				Thread.sleep(1000);
+		for (int t = 0; t < 5; t++) {
+			block = new BlockA(width / 2, 0);
+			block.setBlockToMap(map);
+			System.out.print(drawMap());
 
-				print(block);
+			for (int i = 0; i < height; i++) {
+				try {
+					Thread.sleep(1000);
 
-				block.dropY();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+					block.dropY();
+
+					if (isTouchDown()) {
+						erase(height);
+						removeObjectFromMap();
+						break;
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 
@@ -107,6 +116,23 @@ public class Tetris {
 		return sb.toString();
 	}
 
+	private boolean isTouchDown() {
+		erase(height);
+		removeObjectFromMap();
+
+		if (block.setBlockToMap(map)) {
+			System.out.print(drawMap());
+			return false;
+		} else {
+			removeObjectFromMap();
+			block.recoverY();
+			block.setBlockToMap(map);
+			System.out.print(drawMap());
+			saveObjectToMap();
+			return true;
+		}
+	}
+
 	private void removeObjectFromMap() {
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
@@ -115,21 +141,21 @@ public class Tetris {
 		}
 	}
 
-	private void print(Block block) {
-		erase(height);
-		removeObjectFromMap();
-
-		block.setBlockToMap(map);
-		System.out.print(drawMap());
+	private void saveObjectToMap() {
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < width; col++) {
+				stackedMap[row][col] = map[row][col];
+			}
+		}
 	}
 
 	void receiveKey(char input) {
 		switch (input) {
 		case 'j':
-			block.x--;
+			block.moveLeft();
 			break;
 		case 'l':
-			block.x++;
+			block.moveRight();
 			break;
 		case 'k':
 			block.dropY();
@@ -144,7 +170,7 @@ public class Tetris {
 			break;
 		}
 
-		print(block);
+		isTouchDown();
 	}
 
 	private void erase(int rowsToErase) {

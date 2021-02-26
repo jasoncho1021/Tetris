@@ -10,12 +10,6 @@ package tetris;
  */
 public class BlockA extends Block {
 
-	// 중앙, 시계방향
-	static int[] dx = { 0, 0, 1, 1, 1, 0, -1, -1, -1 };
-	static int[] dy = { 0, -1, -1, 0, 1, 1, 1, 0, -1 };
-	static int[] px = { 1, 1, 2, 2, 2, 1, 0, 0, 0 };
-	static int[] py = { 1, 0, 0, 1, 2, 2, 2, 1, 0 };
-
 	private boolean[][] blockShape = new boolean[3][3];
 
 	public BlockA(int x, int y) {
@@ -36,10 +30,19 @@ public class BlockA extends Block {
 		blockShape[2][2] = true;
 	}
 
+	/*
+	 * # #
+	 * # X
+	 * # X
+	 */
 	@Override
 	void rotateClockWise() {
 		boolean tmp;
 		int s = 0, e = 2;
+
+		// center touch wall
+		moveCenterFromWall();
+
 		for (int i = s, j = e; i < e; i++, j--) {
 			tmp = blockShape[s][i];
 			blockShape[s][i] = blockShape[j][s];
@@ -53,6 +56,9 @@ public class BlockA extends Block {
 	void rotateAntiClockWise() {
 		boolean tmp;
 		int s = 0, e = 2;
+
+		moveCenterFromWall();
+
 		for (int i = s, j = e; i < e; i++, j--) {
 			tmp = blockShape[s][i];
 			blockShape[s][i] = blockShape[i][e];
@@ -63,22 +69,52 @@ public class BlockA extends Block {
 	}
 
 	@Override
-	void setBlockToMap(boolean map[][]) {
+	boolean setBlockToMap(boolean map[][]) {
 		int nx, ny;
-		for (int i = 0; i < 9; i++) {
-			if (blockShape[py[i]][px[i]]) {
-				nx = x + dx[i];
-				ny = y + dy[i];
-				map[ny][nx] = true;
+
+		for (int row = 0; row < 3; row++) {
+			for (int col = 0; col < 3; col++) {
+				if (blockShape[row][col]) {
+					nx = x + (col - 1);
+					ny = y + (row - 1);
+
+					if (map[ny][nx]) {// touchDown
+						return false;
+					}
+
+					map[ny][nx] = true;
+				}
 			}
+		}
+
+		return true;
+	}
+
+	private void moveCenterFromWall() {
+		if (x == 1) {
+			++x;
+		} else if (x == width - 1) {
+			--x;
 		}
 	}
 
-	void isWall() {
+	@Override
+	boolean isWall(int dx) {
+		int nx;
 
-	}
+		for (int row = 0; row < 3; row++) {
+			for (int col = 0; col < 3; col++) {
+				if (blockShape[row][col]) {
+					nx = dx + (col - 1);
 
-	void isTouchDown() {
+					// touchWall
+					if (nx <= 0 || (width - 1) <= nx) {
+						return true;
+					}
+				}
+			}
+		}
 
+		return false;
 	}
 }
