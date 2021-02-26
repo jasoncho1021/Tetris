@@ -37,6 +37,10 @@ public class BlockA extends Block {
 	 */
 	@Override
 	void rotateClockWise() {
+		if (isTop()) {
+			return;
+		}
+
 		boolean tmp;
 		int s = 0, e = 2;
 
@@ -54,6 +58,10 @@ public class BlockA extends Block {
 
 	@Override
 	void rotateAntiClockWise() {
+		if (isTop()) {
+			return;
+		}
+
 		boolean tmp;
 		int s = 0, e = 2;
 
@@ -66,6 +74,14 @@ public class BlockA extends Block {
 			blockShape[e][j] = blockShape[j][s];
 			blockShape[j][s] = tmp;
 		}
+	}
+
+	// long block 일땐 if(y <= 1)
+	private boolean isTop() {
+		if (y == 0) {
+			return true;
+		}
+		return false;
 	}
 
 	@Override

@@ -72,11 +72,11 @@ public class Tetris {
 		Thread keyListeningThread = new Thread(numberConsole);
 		keyListeningThread.start();
 
-		block.height = height;
-		block.width = width;
+		Block.height = height;
+		Block.width = width;
 		// 블럭 착륙할 때마다 랜덤으로 숫자 뽑는다. 숫자와 맵핑되는 BlockA.class 불러와서 객체생성하기.
 
-		for (int t = 0; t < 5; t++) {
+		for (int t = 0; t < 9; t++) {
 			block = new BlockA(width / 2, 0);
 			block.setBlockToMap(map);
 			System.out.print(drawMap());
@@ -127,9 +127,47 @@ public class Tetris {
 			removeObjectFromMap();
 			block.recoverY();
 			block.setBlockToMap(map);
+
+			oneLineChecker();
+
 			System.out.print(drawMap());
 			saveObjectToMap();
 			return true;
+		}
+	}
+
+	private void oneLineChecker() {
+		boolean tempMap[][] = new boolean[height][width];
+
+		int blockCount;
+		int tempRow = height - 1;
+		for (int row = height - 1; row >= 0; row--) {
+			blockCount = 0;
+			for (int col = 0; col < width; col++) {
+				if (map[row][col]) {
+					blockCount++;
+				}
+			}
+
+			// 외벽 포함해서(true) 통째로 카운트
+			if (tempRow == (height - 1) || blockCount < width) {
+				for (int col = 0; col < width; col++) {
+					tempMap[tempRow][col] = map[row][col];
+				}
+				tempRow--;
+			}
+		}
+
+		for (int row = height - 1; row > tempRow; row--) {
+			for (int col = 0; col < width; col++) {
+				map[row][col] = tempMap[row][col];
+			}
+		}
+
+		while (tempRow >= 0) {
+			map[tempRow][0] = true;
+			map[tempRow][(width - 1)] = true;
+			tempRow--;
 		}
 	}
 
