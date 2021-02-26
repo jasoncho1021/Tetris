@@ -25,8 +25,10 @@ import java.io.InputStreamReader;
  */
 public class Tetris {
 
-	private int height = 30;
-	private int width = 15;
+	private final int hiddenStartHeight = 2;
+	private final int drawHeight = 10;
+	private final int height = drawHeight + hiddenStartHeight;
+	private final int width = 15;
 	private boolean map[][] = new boolean[height][width];
 	private boolean stackedMap[][] = new boolean[height][width];
 
@@ -74,10 +76,10 @@ public class Tetris {
 
 		Block.height = height;
 		Block.width = width;
-		// 블럭 착륙할 때마다 랜덤으로 숫자 뽑는다. 숫자와 맵핑되는 BlockA.class 불러와서 객체생성하기.
 
-		for (int t = 0; t < 9; t++) {
-			block = new BlockA(width / 2, 0);
+		// 블럭 착륙할 때마다 랜덤으로 숫자 뽑는다. 숫자와 맵핑되는 BlockA.class 불러와서 객체생성하기.
+		gameLoop: for (int t = 0; t < 9; t++) {
+			block = new BlockA((width / 2), 0);
 			block.setBlockToMap(map);
 			System.out.print(drawMap());
 
@@ -88,8 +90,14 @@ public class Tetris {
 					block.dropY();
 
 					if (isTouchDown()) {
-						erase(height);
+
+						if (isCeilTouched()) {
+							break gameLoop;
+						}
+
+						erase(drawHeight);
 						removeObjectFromMap();
+
 						break;
 					}
 				} catch (InterruptedException e) {
@@ -101,9 +109,18 @@ public class Tetris {
 		numberConsole.cancel();
 	}
 
+	private boolean isCeilTouched() {
+		for (int col = 1; col < width - 1; col++) {
+			if (map[1][col] || map[0][col]) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private String drawMap() {
 		StringBuilder sb = new StringBuilder();
-		for (int row = 0; row < height; row++) {
+		for (int row = hiddenStartHeight; row < height; row++) {
 			for (int col = 0; col < width; col++) {
 				if (map[row][col]) {
 					sb.append("#");
@@ -117,9 +134,10 @@ public class Tetris {
 	}
 
 	private boolean isTouchDown() {
-		erase(height);
+		erase(drawHeight);
 		removeObjectFromMap();
 
+		// touchDown
 		if (block.setBlockToMap(map)) {
 			System.out.print(drawMap());
 			return false;
