@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import tetris.event.TetrisKeyQueue;
+
 /**
  * ubuntu bash 창에서 play 가능한 상태
  * --> bash 옵션을 사용하여 화면에 출력된 문자열들을 덮어쓰거나 입력 키값을 엔터 없이 받는다. 
@@ -23,21 +25,83 @@ import java.io.InputStreamReader;
  * @author glenn
  *
  */
-public class Tetris {
+
+/*
+  [TODO]
+   1. 터치다운 됐을 때 옆 장애물 간격 보고 회전 안 시키는 로직도 필요할 듯.
+   2. 공중에서 벽면이 아닌 블럭 옆면으로 막혔을때
+   3 .sb.setCharAt(index, ch); 으로 height * width 반복 횟수 줄이기.
+*/
+public class TetrisSafe {
+
+	class EventPumper implements Runnable {
+
+		private TetrisKeyQueue tetrisKeyQueue;
+
+		EventPumper(TetrisKeyQueue tetrisKeyQueue) {
+			this.tetrisKeyQueue = tetrisKeyQueue;
+		}
+
+		@Override
+		public void run() {
+			while (true) {
+				Character input = tetrisKeyQueue.pump();
+
+				// 지우는 동안 못 그리게
+				if (input != null) {
+
+					tetrisKeyQueue.setUnable();
+
+					block.doKeyEvent(input, stackedMap);
+
+					if (!alreadyTouchDown && isTouchDown()) {
+
+						if (isCeilTouched()) {
+							isValidBlock = false;
+							isGameOver = true;
+							break;
+						}
+
+						isValidBlock = false;
+					}
+
+					tetrisKeyQueue.setEnable();
+				}
+			}
+
+			System.out.println("SET GAME OVER");
+		}
+	}
 
 	private final int hiddenStartHeight = 2;
-	private final int drawHeight = 10;
+	private final int drawHeight = 30;
 	private final int height = drawHeight + hiddenStartHeight;
-	private final int width = 15;
+	private final int width = 25;
+
+	private TetrisKeyQueue tetrisKeyQueue;
+
 	private boolean map[][] = new boolean[height][width];
 	private boolean stackedMap[][] = new boolean[height][width];
 
 	Block block;
 
+	TetrisSafe() {
+		this.tetrisKeyQueue = new TetrisKeyQueue();
+	}
+
 	public static void main(String[] args) {
-		Tetris tetris = new Tetris();
-		tetris.initBorder();
-		tetris.printAndListen();
+		TetrisSafe tetris = new TetrisSafe();
+		tetris.start();
+	}
+
+	void start() {
+		initBorder();
+
+		EventPumper ev = new EventPumper(this.tetrisKeyQueue);
+		Thread pumpThread = new Thread(ev);
+
+		pumpThread.start();
+		printAndListen();
 	}
 
 	private void initBorder() {
@@ -55,19 +119,9 @@ public class Tetris {
 		}
 	}
 
-	/*
-	 * 	센터 중심으로 , 회전상태, 그리기
-	 *  벽충돌 로직은?
-	 *
-	 *  1. 키 눌린다
-	 *  2. 블럭 상태(중심위치, 회전) 바꾼다
-	 *  3. 벽, 바닥 충돌 감지. // 블록이 판단.
-	 *  4. 블럭 지운다.
-	 *  4. 전체 맵에 박는다.
-	 *     for
-	 *       for 
-	 *
-	 */
+	private boolean isGameOver = false;
+	private boolean isValidBlock = true;
+	private boolean alreadyTouchDown = false;
 
 	private void printAndListen() {
 		NumbersConsole numberConsole = new NumbersConsole(this);
@@ -77,36 +131,61 @@ public class Tetris {
 		Block.height = height;
 		Block.width = width;
 
-		// 블럭 착륙할 때마다 랜덤으로 숫자 뽑는다. 숫자와 맵핑되는 BlockA.class 불러와서 객체생성하기.
-		gameLoop: for (int t = 0; t < 9; t++) {
-			block = new BlockA((width / 2), 0);
-			block.setBlockToMap(map);
-			System.out.print(drawMap());
+		System.out.print(drawMap());
 
-			for (int i = 0; i < height; i++) {
+		while (!isGameOver) {
+			setNewBlock();
+			isValidBlock = true;
+			alreadyTouchDown = false;
+			tetrisKeyQueue.clearQueue();
+
+			int h = 0;
+			while (isValidBlock && (h < height + 1)) {
 				try {
+					tetrisKeyQueue.post(new Character('k'));
+
+					h++;
+
 					Thread.sleep(1000);
 
-					block.dropY();
-
-					if (isTouchDown()) {
-
-						if (isCeilTouched()) {
-							break gameLoop;
-						}
-
-						erase(drawHeight);
-						removeObjectFromMap();
-
-						break;
-					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 			}
 		}
 
+		System.out.println("end");
+
 		numberConsole.cancel();
+	}
+
+	private void setNewBlock() {
+		block = new BlockA((width / 2), 0);
+		block.setBlockToMap(map);
+	}
+
+	private boolean isTouchDown() {
+		erase(drawHeight);
+		removeObjectFromMap();
+
+		// touchDown
+		if (!block.setBlockToMap(map)) {
+			block.recoverY();
+			removeObjectFromMap();
+
+			block.setBlockToMap(map);
+
+			oneLineChecker();
+
+			System.out.print(drawMap());
+			saveObjectToMap();
+
+			alreadyTouchDown = true;
+			return true;
+		} else {
+			System.out.print(drawMap());
+			return false;
+		}
 	}
 
 	private boolean isCeilTouched() {
@@ -122,7 +201,9 @@ public class Tetris {
 		StringBuilder sb = new StringBuilder();
 		for (int row = hiddenStartHeight; row < height; row++) {
 			for (int col = 0; col < width; col++) {
-				if (map[row][col]) {
+				if (col == 0 || col == (width - 1)) {
+					sb.append(row % 10);
+				} else if (map[row][col]) {
 					sb.append("#");
 				} else {
 					sb.append(" ");
@@ -131,27 +212,6 @@ public class Tetris {
 			sb.append("\n");
 		}
 		return sb.toString();
-	}
-
-	private boolean isTouchDown() {
-		erase(drawHeight);
-		removeObjectFromMap();
-
-		// touchDown
-		if (block.setBlockToMap(map)) {
-			System.out.print(drawMap());
-			return false;
-		} else {
-			removeObjectFromMap();
-			block.recoverY();
-			block.setBlockToMap(map);
-
-			oneLineChecker();
-
-			System.out.print(drawMap());
-			saveObjectToMap();
-			return true;
-		}
 	}
 
 	private void oneLineChecker() {
@@ -206,27 +266,7 @@ public class Tetris {
 	}
 
 	void receiveKey(char input) {
-		switch (input) {
-		case 'j':
-			block.moveLeft();
-			break;
-		case 'l':
-			block.moveRight();
-			break;
-		case 'k':
-			block.dropY();
-			break;
-		case 'd':
-			block.rotateAntiClockWise();
-			break;
-		case 'f':
-			block.rotateClockWise();
-			break;
-		default:
-			break;
-		}
-
-		isTouchDown();
+		tetrisKeyQueue.post(input);
 	}
 
 	private void erase(int rowsToErase) {

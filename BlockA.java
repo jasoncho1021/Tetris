@@ -36,7 +36,7 @@ public class BlockA extends Block {
 	 * # X
 	 */
 	@Override
-	void rotateClockWise() {
+	void rotateClockWise(final boolean[][] map) {
 		if (isTop()) {
 			return;
 		}
@@ -57,7 +57,7 @@ public class BlockA extends Block {
 	}
 
 	@Override
-	void rotateAntiClockWise() {
+	void rotateAntiClockWise(final boolean[][] map) {
 		if (isTop()) {
 			return;
 		}
@@ -94,7 +94,8 @@ public class BlockA extends Block {
 					nx = x + (col - 1);
 					ny = y + (row - 1);
 
-					if (map[ny][nx]) {// touchDown
+					// touchDown
+					if (map[ny][nx]) {
 						return false;
 					}
 
@@ -106,6 +107,10 @@ public class BlockA extends Block {
 		return true;
 	}
 
+	private void isStuck(final boolean[][] map) {
+		
+	}
+
 	private void moveCenterFromWall() {
 		if (x == 1) {
 			++x;
@@ -115,22 +120,28 @@ public class BlockA extends Block {
 	}
 
 	@Override
-	boolean isWall(int dx) {
-		int nx;
+	boolean isWall(int dx, final boolean[][] map) {
+		int nx, ny;
 
+		nx = 0;
+		ny = 0;
 		for (int row = 0; row < 3; row++) {
 			for (int col = 0; col < 3; col++) {
 				if (blockShape[row][col]) {
 					nx = dx + (col - 1);
+					ny = y + (row - 1);
 
 					// touchWall
-					if (nx <= 0 || (width - 1) <= nx) {
+					if (nx < 0 || width <= nx) {
+						return true;
+					}
+
+					if (map[ny][nx]) { // stackedMap 전달 받으니 렉 안 걸림.
 						return true;
 					}
 				}
 			}
 		}
-
 		return false;
 	}
 }

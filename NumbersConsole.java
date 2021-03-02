@@ -12,13 +12,13 @@ public class NumbersConsole implements Runnable {
 
 	private boolean isCanceled = false;
 
-	private Tetris tetris;
+	private TetrisSafe tetris;
 
-	NumbersConsole(Tetris tetris) {
+	NumbersConsole(TetrisSafe tetris) {
 		this.tetris = tetris;
 	}
 
-	public char getInput() {
+	private char getInput() {
 		char temp = input;
 		input = '\0';
 		return temp;
