@@ -4,8 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import tetris.event.TetrisKeyQueue;
-
 /**
  * ubuntu bash 창에서 play 가능한 상태
  * --> bash 옵션을 사용하여 화면에 출력된 문자열들을 덮어쓰거나 입력 키값을 엔터 없이 받는다. 
@@ -34,60 +32,15 @@ import tetris.event.TetrisKeyQueue;
 */
 public class TetrisSafe {
 
-	class EventPumper implements Runnable {
-
-		private TetrisKeyQueue tetrisKeyQueue;
-
-		EventPumper(TetrisKeyQueue tetrisKeyQueue) {
-			this.tetrisKeyQueue = tetrisKeyQueue;
-		}
-
-		@Override
-		public void run() {
-			while (true) {
-				Character input = tetrisKeyQueue.pump();
-
-				// 지우는 동안 못 그리게
-				if (input != null) {
-
-					tetrisKeyQueue.setUnable();
-
-					block.doKeyEvent(input, stackedMap);
-
-					if (!alreadyTouchDown && isTouchDown()) {
-
-						if (isCeilTouched()) {
-							isValidBlock = false;
-							isGameOver = true;
-							break;
-						}
-
-						isValidBlock = false;
-					}
-
-					tetrisKeyQueue.setEnable();
-				}
-			}
-
-			System.out.println("SET GAME OVER");
-		}
-	}
-
 	private final int hiddenStartHeight = 2;
 	private final int drawHeight = 30;
 	private final int height = drawHeight + hiddenStartHeight;
 	private final int width = 25;
 
-	private TetrisKeyQueue tetrisKeyQueue;
-
 	private boolean map[][] = new boolean[height][width];
 	private boolean stackedMap[][] = new boolean[height][width];
 
 	Block block;
-
-	TetrisSafe() {
-		this.tetrisKeyQueue = new TetrisKeyQueue();
-	}
 
 	public static void main(String[] args) {
 		TetrisSafe tetris = new TetrisSafe();
@@ -97,10 +50,6 @@ public class TetrisSafe {
 	void start() {
 		initBorder();
 
-		EventPumper ev = new EventPumper(this.tetrisKeyQueue);
-		Thread pumpThread = new Thread(ev);
-
-		pumpThread.start();
 		printAndListen();
 	}
 
@@ -137,12 +86,11 @@ public class TetrisSafe {
 			setNewBlock();
 			isValidBlock = true;
 			alreadyTouchDown = false;
-			tetrisKeyQueue.clearQueue();
 
 			int h = 0;
 			while (isValidBlock && (h < height + 1)) {
 				try {
-					tetrisKeyQueue.post(new Character('k'));
+					rerender(new Character('k'));
 
 					h++;
 
@@ -157,6 +105,21 @@ public class TetrisSafe {
 		System.out.println("end");
 
 		numberConsole.cancel();
+	}
+
+	// synchronized
+	synchronized private void rerender(Character input) {
+		block.doKeyEvent(input, stackedMap);
+
+		if (!alreadyTouchDown && isTouchDown()) {
+
+			if (isCeilTouched()) {
+				isValidBlock = false;
+				isGameOver = true;
+			}
+
+			isValidBlock = false;
+		}
 	}
 
 	private void setNewBlock() {
@@ -266,7 +229,7 @@ public class TetrisSafe {
 	}
 
 	void receiveKey(char input) {
-		tetrisKeyQueue.post(input);
+		rerender(input);
 	}
 
 	private void erase(int rowsToErase) {
