@@ -51,34 +51,43 @@ public abstract class Block {
 		}
 	}
 
-	void doKeyEvent(Character input, final boolean[][] stackedMap) {
+	void doKeyEvent(Character input, final boolean[][] map) {
 		switch (input) {
 		case 'j':
-			moveLeft(stackedMap);
+			moveLeft(map);
 			break;
 		case 'l':
-			moveRight(stackedMap);
+			moveRight(map);
 			break;
 		case 'k':
 			dropY();
 			break;
 		case 'd':
-			rotateAntiClockWise(stackedMap);
+			rotateAntiClockWise();
 			break;
 		case 'f':
-			rotateClockWise(stackedMap);
+			rotateClockWise();
 			break;
 		default:
 			break;
 		}
 	}
 
-	abstract void rotateClockWise(final boolean[][] map);
+	public String toString() {
+		return x + " " + y;
+	}
 
-	abstract void rotateAntiClockWise(final boolean[][] map);
+	abstract void remove(boolean[][] map);
+
+	abstract void rotateClockWise();
+
+	abstract void rotateAntiClockWise();
 
 	abstract boolean setBlockToMap(boolean[][] map);
 
+	abstract boolean isPossibleToPut(final boolean[][] map);
+
 	abstract boolean isWall(int nx, final boolean[][] map);
 
+	abstract boolean isCeil();
 }

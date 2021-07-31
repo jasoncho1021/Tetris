@@ -33,14 +33,13 @@ import java.io.InputStreamReader;
 public class TetrisSafe {
 
 	private final int hiddenStartHeight = 2;
-	private final int drawHeight = 30;
+	private final int drawHeight = 10 + 1;//30;
 	private final int height = drawHeight + hiddenStartHeight;
-	private final int width = 25;
+	private final int width = 9 + 2;//25;
 
 	private boolean map[][] = new boolean[height][width];
-	private boolean stackedMap[][] = new boolean[height][width];
 
-	Block block;
+	private Block block;
 
 	public static void main(String[] args) {
 		TetrisSafe tetris = new TetrisSafe();
@@ -49,7 +48,6 @@ public class TetrisSafe {
 
 	void start() {
 		initBorder();
-
 		printAndListen();
 	}
 
@@ -57,11 +55,9 @@ public class TetrisSafe {
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
 				if (col == 0 || col == (width - 1)) {
-					stackedMap[row][col] = true;
 					map[row][col] = true;
 				}
 				if (row == (height - 1)) {
-					stackedMap[row][col] = true;
 					map[row][col] = true;
 				}
 			}
@@ -69,8 +65,6 @@ public class TetrisSafe {
 	}
 
 	private boolean isGameOver = false;
-	private boolean isValidBlock = true;
-	private boolean alreadyTouchDown = false;
 
 	private void printAndListen() {
 		NumbersConsole numberConsole = new NumbersConsole(this);
@@ -80,21 +74,37 @@ public class TetrisSafe {
 		Block.height = height;
 		Block.width = width;
 
+		int gameState = 2;
 		System.out.print(drawMap());
+		setNewBlock();
 
 		while (!isGameOver) {
-			setNewBlock();
-			isValidBlock = true;
-			alreadyTouchDown = false;
 
-			int h = 0;
-			while (isValidBlock && (h < height + 1)) {
+			// keep falling
+			while (true) {
 				try {
-					rerender(new Character('k'));
+					gameState = rerender(new Character('k'));
 
-					h++;
+					/**
+					 * 
+					 * 
+					 *  removePerfectLine 한 뒤
+					 *  이 찰나에
+					 *  keyboard 가 rerender 호출해서.
+					 *  block.remove 호출해서 에러남.
+					 * 
+					 *  setNewBlock을 rerender에 넣어서 해결.
+					 * 
+					 */
 
-					Thread.sleep(1000);
+					if (gameState == -1) {
+						isGameOver = true;
+						break;
+					} else if (gameState == 0) {
+						break;
+					}
+
+					Thread.sleep(1000); // hold lock from main thread, then rerender?
 
 				} catch (InterruptedException e) {
 					e.printStackTrace();
@@ -102,62 +112,64 @@ public class TetrisSafe {
 			}
 		}
 
-		System.out.println("end");
-
 		numberConsole.cancel();
 	}
 
-	// synchronized
-	synchronized private void rerender(Character input) {
-		block.doKeyEvent(input, stackedMap);
-
-		if (!alreadyTouchDown && isTouchDown()) {
-
-			if (isCeilTouched()) {
-				isValidBlock = false;
-				isGameOver = true;
-			}
-
-			isValidBlock = false;
-		}
+	private void setNewBlock() {
+		block = new BlockA((width / 2), 0); // ceil touch 우회. 근데, 이러면 블럭 모양마다 y 값이 달라야한다.
+		//block.setBlockToMap(map);
 	}
 
-	private void setNewBlock() {
-		block = new BlockA((width / 2), 0);
+	// synchronized
+	synchronized private int rerender(Character input) {
+		int gameState = 1;
+
+		removePreviousFallingBlockFromMap();
+
+		block.doKeyEvent(input, map);
+
+		if (isTouchDown()) {
+			gameState = 0;
+
+			if (block.isCeil()) {
+				gameState = -1;
+				return gameState;
+			}
+		}
+
 		block.setBlockToMap(map);
+
+		if (gameState == 0) {
+			removePerfectLine();
+			setNewBlock();
+		}
+
+		// 콘솔 화면 전체 삭제
+		erase(drawHeight);
+
+		System.out.print(drawMap());
+
+		return gameState; // keep falling
+	}
+
+	private void removePreviousFallingBlockFromMap() {
+		block.remove(map);
 	}
 
 	private boolean isTouchDown() {
-		erase(drawHeight);
-		removeObjectFromMap();
+		// 방향 회전 또는 이동 ==>  블럭 중심 좌표 변경
 
-		// touchDown
-		if (!block.setBlockToMap(map)) {
-			block.recoverY();
-			removeObjectFromMap();
-
-			block.setBlockToMap(map);
-
-			oneLineChecker();
-
-			System.out.print(drawMap());
-			saveObjectToMap();
-
-			alreadyTouchDown = true;
-			return true;
-		} else {
-			System.out.print(drawMap());
+		/*
+		 * rerender 함수 첫 줄에서 block 이동시킨 모양이
+		 * 바닥 경계와 겹치거나 이미 쌓여 있는 블럭과 겹치는지 확인 후
+		 * 복구 또는 계속 진행
+		 */
+		if (block.isPossibleToPut(map)) {
 			return false;
+		} else {
+			block.recoverY();
+			return true;
 		}
-	}
-
-	private boolean isCeilTouched() {
-		for (int col = 1; col < width - 1; col++) {
-			if (map[1][col] || map[0][col]) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private String drawMap() {
@@ -165,9 +177,17 @@ public class TetrisSafe {
 		for (int row = hiddenStartHeight; row < height; row++) {
 			for (int col = 0; col < width; col++) {
 				if (col == 0 || col == (width - 1)) {
-					sb.append(row % 10);
+					if (row == height - 1) {
+						sb.append(" ");
+					} else {
+						sb.append(row % 10);
+					}
 				} else if (map[row][col]) {
-					sb.append("#");
+					if (row == height - 1) {
+						sb.append("^");
+					} else {
+						sb.append("#");
+					}
 				} else {
 					sb.append(" ");
 				}
@@ -177,7 +197,7 @@ public class TetrisSafe {
 		return sb.toString();
 	}
 
-	private void oneLineChecker() {
+	private void removePerfectLine() {
 		boolean tempMap[][] = new boolean[height][width];
 
 		int blockCount;
@@ -209,22 +229,6 @@ public class TetrisSafe {
 			map[tempRow][0] = true;
 			map[tempRow][(width - 1)] = true;
 			tempRow--;
-		}
-	}
-
-	private void removeObjectFromMap() {
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				map[row][col] = stackedMap[row][col];
-			}
-		}
-	}
-
-	private void saveObjectToMap() {
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				stackedMap[row][col] = map[row][col];
-			}
 		}
 	}
 
