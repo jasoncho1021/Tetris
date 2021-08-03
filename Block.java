@@ -49,35 +49,24 @@ public abstract class Block {
 	}
 
 	// center position
-	int x;
-	int y;
+	protected int x;
+	protected int y;
+	protected boolean[][] blockShape;
+	protected int shapeSize;
 
-	private boolean stopFlag;
-	boolean[][] blockShape;
-
-	Block(int y) {
+	Block(int shapeSize) {
 		this.x = (width / 2);
-		this.y = y;
-		this.stopFlag = false;
+		this.y = 0;
+		this.shapeSize = shapeSize;
+		this.blockShape = new boolean[shapeSize][shapeSize];
 
 		initShape();
 	}
 
-	void stopDrop() {
-		stopFlag = true;
-		--y; // recovery once here
-	}
+	abstract void initShape();
 
-	void startDrop() {
-		stopFlag = false;
-	}
-
-	boolean isStop() {
-		return stopFlag;
-	}
-
-	void dropY() {
-		if (!stopFlag && (y < (height - 1))) {
+	private void dropY() {
+		if (y < (height - 1)) {
 			++y;
 		}
 	}
@@ -86,19 +75,19 @@ public abstract class Block {
 		--y;
 	}
 
-	void moveLeft(final boolean[][] map) {
+	private void moveLeft(final boolean[][] map) {
 		if (!isWall(x - 1, map)) {
 			--x;
 		}
 	}
 
-	void moveRight(final boolean[][] map) {
+	private void moveRight(final boolean[][] map) {
 		if (!isWall(x + 1, map)) {
 			++x;
 		}
 	}
 
-	void doKeyEvent(Character input, final boolean[][] map) {
+	protected void doKeyEvent(Character input, final boolean[][] map) {
 		switch (input) {
 		case 'j':
 			moveLeft(map);
@@ -124,19 +113,180 @@ public abstract class Block {
 		return x + " " + y;
 	}
 
-	abstract void remove(boolean[][] map);
+	/*
+	 * # #
+	 * # X
+	 * # X
+	 */
+	void rotateClockWise() {
+		if (isTop()) {
+			//return;
+		}
 
-	abstract void rotateClockWise();
+		boolean tmp;
 
-	abstract void rotateAntiClockWise();
+		// center touch wall
+		moveCenterFromWall();
 
-	abstract void setBlockToMap(boolean[][] map);
+		for (int s = 0, e = shapeSize - 1; s < e; s++, e--) {
+			for (int i = s, j = e; i < e; i++, j--) {
+				tmp = blockShape[s][i];
+				blockShape[s][i] = blockShape[j][s];
+				blockShape[j][s] = blockShape[e][j];
+				blockShape[e][j] = blockShape[i][e];
+				blockShape[i][e] = tmp;
+			}
+		}
+	}
 
-	abstract boolean isPossibleToPut(final boolean[][] map);
+	void rotateAntiClockWise() {
+		if (isTop()) {
+			//return;
+		}
 
-	abstract boolean isWall(int nx, final boolean[][] map);
+		boolean tmp;
 
-	abstract boolean isCeil();
+		moveCenterFromWall();
 
-	abstract void initShape();
+		for (int s = 0, e = shapeSize - 1; s < e; s++, e--) {
+			for (int i = s, j = e; i < e; i++, j--) {
+				tmp = blockShape[s][i];
+				blockShape[s][i] = blockShape[i][e];
+				blockShape[i][e] = blockShape[e][j];
+				blockShape[e][j] = blockShape[j][s];
+				blockShape[j][s] = tmp;
+			}
+		}
+	}
+
+	// long block 일땐 if(y <= 1)
+	private boolean isTop() {
+		if (y == 0) {
+			return true;
+		}
+		return false;
+	}
+
+	void setBlockToMap(boolean map[][]) {
+		int nx, ny;
+
+		for (int row = 0; row < shapeSize; row++) {
+			for (int col = 0; col < shapeSize; col++) {
+				if (blockShape[row][col]) {
+					nx = x + (col - 1);
+					ny = y + (row - 1);
+
+					// draw
+					map[ny][nx] = true;
+				}
+			}
+		}
+	}
+
+	boolean isPossibleToPut(final boolean map[][]) {
+		int nx, ny;
+		for (int row = 0; row < shapeSize; row++) {
+			for (int col = 0; col < shapeSize; col++) {
+				if (blockShape[row][col]) {
+					nx = x + (col - 1);
+					ny = y + (row - 1);
+
+					// touchDown
+					if (map[ny][nx]) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	private void moveCenterFromWall() {
+		if (x == 1) {
+			//++x;
+			x = x + (shapeSize - 2);
+		} else if (x == width - 2) { // 수정 오른쪽 옆 통과 수정. -1 ==> -2 (양쪽 테두리 길이 제거)
+			//--x;
+			x = x - (shapeSize - 2);
+		}
+	}
+
+	boolean isWall(int dx, final boolean[][] map) {
+		int nx = 0;
+		int ny = 0;
+		for (int row = 0; row < shapeSize; row++) {
+			for (int col = 0; col < shapeSize; col++) {
+				if (blockShape[row][col]) {
+					nx = dx + (col - 1);
+					ny = y + (row - 1);
+
+					// touchWall
+					if (nx < 0 || width <= nx) {
+						return true;
+					}
+
+					if (map[ny][nx]) { // stackedMap 전달 받으니 렉 안 걸림.
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	void remove(boolean[][] map) {
+		int nx = 0;
+		int ny = 0;
+		for (int row = 0; row < shapeSize; row++) {
+			for (int col = 0; col < shapeSize; col++) {
+				if (blockShape[row][col]) {
+					//  중심 + ( 9 방향 offset)
+					/**
+					 *  00 01 02 
+					 *  10 11 12
+					 *  20 21 22
+					 *  
+					 *  -1-1 -10 -11
+					 *   0-1  00  01
+					 *   1-1  10  11
+					 */
+					nx = x + (col - 1);
+					ny = y + (row - 1);
+
+					map[ny][nx] = false;
+				}
+			}
+		}
+	}
+
+	/**
+	 * 
+	 * 44
+	 * 
+	 * 00 01 02 03
+	 * 10 11 12 13
+	 * 20 21 22 23
+	 * 30 31 32 33
+	 * 
+	 * -1-1 -10 -11 -12
+	 *       @   
+	 */
+
+	boolean isCeil() {
+		int topY = shapeSize;
+		topLoop: for (int row = 0; row < shapeSize; row++) {
+			for (int col = 0; col < shapeSize; col++) {
+				if (blockShape[row][col]) {
+					topY = y + (row - 1);
+					break topLoop;
+				}
+			}
+		}
+
+		if (topY < 2) { // hiddenHeight
+			return true;
+		}
+
+		return false;
+	}
 }

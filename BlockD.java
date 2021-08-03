@@ -1,23 +1,24 @@
 package tetris;
 
 /**
- *  XXX
- *  ##X
- *  X##
+ *  XXXX
+ *  X##X
+ *  X##X
+ *  XXXX
  */
 @TetrisBlock
-public class BlockB extends Block {
+public class BlockD extends Block {
 
-	public BlockB() {
-		super(3);
+	public BlockD() {
+		super(4);
 	}
 
 	@Override
 	void initShape() {
-		// [y][x]
-		blockShape[1][0] = true;
 		blockShape[1][1] = true;
+		blockShape[1][2] = true;
 		blockShape[2][1] = true;
 		blockShape[2][2] = true;
 	}
+
 }

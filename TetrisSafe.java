@@ -24,12 +24,6 @@ import java.io.InputStreamReader;
  *
  */
 
-/*
-  [TODO]
-   1. 터치다운 됐을 때 옆 장애물 간격 보고 회전 안 시키는 로직도 필요할 듯.
-   2. 공중에서 벽면이 아닌 블럭 옆면으로 막혔을때
-   3 .sb.setCharAt(index, ch); 으로 height * width 반복 횟수 줄이기.
-*/
 public class TetrisSafe {
 
 	private final int hiddenStartHeight = 2;
@@ -46,13 +40,16 @@ public class TetrisSafe {
 		tetris.start();
 	}
 
-	void start() {
+	private void start() {
+		initBlock();
+		initBorder();
+		printAndListen();
+	}
+
+	private void initBlock() {
 		Block.height = height;
 		Block.width = width;
 		Block.scan(getClass().getPackage().getName());
-
-		initBorder();
-		printAndListen();
 	}
 
 	private void initBorder() {
