@@ -1,65 +1,17 @@
 package tetris;
 
 /**
- * 
- * just 3X3 roatation.
- * except long block
- * 
- * @author glenn
- *
+ *  XXX
+ *  ##X
+ *  X##
  */
 @TetrisBlock
-public class BlockA extends Block {
+public class BlockB extends Block {
 
-	//private boolean[][] blockShape;// = new boolean[3][3];
-
-	/**
-	 * x,y means the center point of block rotation == @ 
-	 * 
-	 *  X X X
-	 *  # @ #
-	 *  X X #
-	 * 
-	 * @param x
-	 * @param y
-	 */
-
-	public BlockA() {
-		super(0); // y
+	public BlockB() {
+		super(0);
 	}
 
-	public static void main(String[] args) {
-	}
-
-	private static void testRotation() {
-		BlockA block = new BlockA();
-
-		StringBuilder sb;
-		for (int k = 0; k < 4; k++) {
-			sb = new StringBuilder();
-
-			for (int row = 0; row < 3; row++) {
-				for (int col = 0; col < 3; col++) {
-					if (block.blockShape[row][col]) {
-						sb.append("#");
-					} else {
-						sb.append("*");
-					}
-				}
-				sb.append("\n");
-			}
-
-			System.out.println(sb.toString());
-			block.rotateAntiClockWise();
-		}
-
-	}
-
-	/*
-	 *  X X X
-	 *  # # #
-	 *  X X #
-	 */
 	@Override
 	void initShape() {
 		blockShape = new boolean[3][3];
@@ -67,7 +19,7 @@ public class BlockA extends Block {
 		// [y][x]
 		blockShape[1][0] = true;
 		blockShape[1][1] = true;
-		blockShape[1][2] = true;
+		blockShape[2][1] = true;
 		blockShape[2][2] = true;
 	}
 
@@ -237,4 +189,5 @@ public class BlockA extends Block {
 
 		return false;
 	}
+
 }

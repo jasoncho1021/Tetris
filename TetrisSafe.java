@@ -35,7 +35,7 @@ public class TetrisSafe {
 	private final int hiddenStartHeight = 2;
 	private final int drawHeight = 10 + 1;//30;
 	private final int height = drawHeight + hiddenStartHeight;
-	private final int width = 9 + 2;//25;
+	private final int width = 12 + 2;//25;
 
 	private boolean map[][] = new boolean[height][width];
 
@@ -47,6 +47,10 @@ public class TetrisSafe {
 	}
 
 	void start() {
+		Block.height = height;
+		Block.width = width;
+		Block.scan(getClass().getPackage().getName());
+
 		initBorder();
 		printAndListen();
 	}
@@ -70,9 +74,6 @@ public class TetrisSafe {
 		NumbersConsole numberConsole = new NumbersConsole(this);
 		Thread keyListeningThread = new Thread(numberConsole);
 		keyListeningThread.start();
-
-		Block.height = height;
-		Block.width = width;
 
 		int gameState = 2;
 		System.out.print(drawMap());
@@ -116,7 +117,8 @@ public class TetrisSafe {
 	}
 
 	private void setNewBlock() {
-		block = new BlockA((width / 2), 0); // ceil touch 우회. 근데, 이러면 블럭 모양마다 y 값이 달라야한다.
+		//block = new BlockA((width / 2), 0); // ceil touch 우회. 근데, 이러면 블럭 모양마다 y 값이 달라야한다.
+		block = Block.getNewBlock();
 		//block.setBlockToMap(map);
 	}
 
