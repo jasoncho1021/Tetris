@@ -26,12 +26,7 @@ import java.io.InputStreamReader;
 
 public class TetrisSafe {
 
-	private final int hiddenStartHeight = 2;
-	private final int drawHeight = 10 + 1;//30;
-	private final int height = drawHeight + hiddenStartHeight;
-	private final int width = 12 + 2;//25;
-
-	private boolean map[][] = new boolean[height][width];
+	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 
 	private Block block;
 
@@ -47,18 +42,16 @@ public class TetrisSafe {
 	}
 
 	private void initBlock() {
-		Block.height = height;
-		Block.width = width;
 		Block.scan(getClass().getPackage().getName());
 	}
 
 	private void initBorder() {
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				if (col == 0 || col == (width - 1)) {
+		for (int row = 0; row < GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER; row++) {
+			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+				if (col == 0 || col > GameProperties.WIDTH) {
 					map[row][col] = true;
 				}
-				if (row == (height - 1)) {
+				if (row == GameProperties.HEIGHT_PLUS_HIDDEN_START) {
 					map[row][col] = true;
 				}
 			}
@@ -88,7 +81,7 @@ public class TetrisSafe {
 					 * 
 					 *  removePerfectLine 한 뒤
 					 *  이 찰나에
-					 *  keyboard 가 rerender 호출해서.
+					 *  keyboard 가 rerender 호출한다.
 					 *  block.remove 호출해서 에러남.
 					 * 
 					 *  setNewBlock을 rerender에 넣어서 해결.
@@ -114,9 +107,7 @@ public class TetrisSafe {
 	}
 
 	private void setNewBlock() {
-		//block = new BlockA((width / 2), 0); // ceil touch 우회. 근데, 이러면 블럭 모양마다 y 값이 달라야한다.
 		block = Block.getNewBlock();
-		//block.setBlockToMap(map);
 	}
 
 	// synchronized
@@ -127,6 +118,10 @@ public class TetrisSafe {
 
 		block.doKeyEvent(input, map);
 
+		/*
+		 * doKeyEvent -> 안 겹치면 이동 및 회전, 겹치면 안 겹쳤던 직전 상태 유지. 
+		 * isTouchDown -> isPossibleToPut -> 겹치는 여부 확인. 
+		 */
 		if (isTouchDown()) {
 			gameState = 0;
 
@@ -144,7 +139,7 @@ public class TetrisSafe {
 		}
 
 		// 콘솔 화면 전체 삭제
-		erase(drawHeight);
+		erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER);
 
 		System.out.print(drawMap());
 
@@ -173,16 +168,17 @@ public class TetrisSafe {
 
 	private String drawMap() {
 		StringBuilder sb = new StringBuilder();
-		for (int row = hiddenStartHeight; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				if (col == 0 || col == (width - 1)) {
-					if (row == height - 1) {
+		int lineNum = 1;
+		for (int row = GameProperties.HIDDEN_START_HEIGHT; row < GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER; row++) {
+			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+				if (col == 0 || col > GameProperties.WIDTH) {
+					if (row == GameProperties.HEIGHT_PLUS_HIDDEN_START) {
 						sb.append(" ");
 					} else {
-						sb.append(row % 10);
+						sb.append(Integer.toHexString(lineNum % 16));
 					}
 				} else if (map[row][col]) {
-					if (row == height - 1) {
+					if (row == GameProperties.HEIGHT_PLUS_HIDDEN_START) {
 						sb.append("^");
 					} else {
 						sb.append("#");
@@ -192,41 +188,46 @@ public class TetrisSafe {
 				}
 			}
 			sb.append("\n");
+			lineNum++;
 		}
 		return sb.toString();
 	}
 
 	private void removePerfectLine() {
-		boolean tempMap[][] = new boolean[height][width];
+		boolean tempMap[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 
 		int blockCount;
-		int tempRow = height - 1;
-		for (int row = height - 1; row >= 0; row--) {
+		int tempRow = GameProperties.HEIGHT_PLUS_HIDDEN_START;
+		for (int row = GameProperties.HEIGHT_PLUS_HIDDEN_START; row >= 0; row--) {
 			blockCount = 0;
-			for (int col = 0; col < width; col++) {
+			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 				if (map[row][col]) {
 					blockCount++;
 				}
 			}
 
+			// 완벽한 줄들 건너 뜀 == (삭제)
+			// 완벽하지 못 한 줄들 땡김.
 			// 외벽 포함해서(true) 통째로 카운트
-			if (tempRow == (height - 1) || blockCount < width) {
-				for (int col = 0; col < width; col++) {
+			if (tempRow == (GameProperties.HEIGHT_PLUS_HIDDEN_START)
+					|| blockCount < GameProperties.WIDTH_PLUS_SIDE_BORDERS) {
+				for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 					tempMap[tempRow][col] = map[row][col];
 				}
 				tempRow--;
 			}
 		}
 
-		for (int row = height - 1; row > tempRow; row--) {
-			for (int col = 0; col < width; col++) {
+		for (int row = GameProperties.HEIGHT_PLUS_HIDDEN_START; row > tempRow; row--) {
+			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 				map[row][col] = tempMap[row][col];
 			}
 		}
 
+		// 나머지 텅 빈 윗 줄들 양쪽 테두리 만들기.
 		while (tempRow >= 0) {
 			map[tempRow][0] = true;
-			map[tempRow][(width - 1)] = true;
+			map[tempRow][(GameProperties.WIDTH_PLUS_SIDE_BORDERS - 1)] = true;
 			tempRow--;
 		}
 	}

@@ -2,7 +2,7 @@ package tetris;
 
 /**
  *  XXX
- *  ##X
+ *  #@X
  *  X##
  */
 @TetrisBlock
@@ -14,7 +14,6 @@ public class BlockB extends Block {
 
 	@Override
 	void initShape() {
-		// [y][x]
 		blockShape[1][0] = true;
 		blockShape[1][1] = true;
 		blockShape[2][1] = true;

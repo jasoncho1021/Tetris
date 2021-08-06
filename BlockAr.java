@@ -5,12 +5,12 @@ package tetris;
  * 
  *  X X X
  *  # @ #
- *  X X #
+ *  # X X
  */
 @TetrisBlock
-public class BlockA extends Block {
+public class BlockAr extends Block {
 
-	public BlockA() {
+	public BlockAr() {
 		super(3); // shapeSize
 	}
 
@@ -20,7 +20,7 @@ public class BlockA extends Block {
 		blockShape[1][0] = true;
 		blockShape[1][1] = true;
 		blockShape[1][2] = true;
-		blockShape[2][2] = true;
+		blockShape[2][0] = true;
 	}
 
 }

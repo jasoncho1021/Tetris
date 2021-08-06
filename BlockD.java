@@ -21,4 +21,8 @@ public class BlockD extends Block {
 		blockShape[2][2] = true;
 	}
 
+	@Override
+	protected boolean isPossibleToRotate(final boolean[][] map) {
+		return false;
+	}
 }

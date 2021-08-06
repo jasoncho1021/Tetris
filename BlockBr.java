@@ -2,19 +2,18 @@ package tetris;
 
 /**
  *  XXX
- *  X##
+ *  X@#
  *  ##X
  */
 @TetrisBlock
-public class BlockC extends Block {
+public class BlockBr extends Block {
 
-	public BlockC() {
+	public BlockBr() {
 		super(3);
 	}
 
 	@Override
 	void initShape() {
-		// [y][x]
 		blockShape[1][1] = true;
 		blockShape[1][2] = true;
 		blockShape[2][0] = true;
