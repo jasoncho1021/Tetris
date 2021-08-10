@@ -40,7 +40,7 @@ public class TetrisGame {
 
 	private void start() {
 		initBorder();
-		initKeyListener();
+		initInputListener();
 		gameStart();
 	}
 
@@ -57,7 +57,7 @@ public class TetrisGame {
 		}
 	}
 
-	private void initKeyListener() {
+	private void initInputListener() {
 		inputConsole = new InputConsole(new TetrisInputListener() {
 
 			@Override

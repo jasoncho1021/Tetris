@@ -4,6 +4,15 @@ import tetris.GameProperties;
 
 public abstract class Block implements BlockMovable {
 
+	/* 
+	 * default setting 3 X 3
+	 * 1) +
+	 * 2) x
+	 */
+	// x, y
+	private static int mask[][] = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 }, { 1, -1 }, { 1, 1 }, { -1, 1 },
+			{ -1, -1 } };
+
 	// rotation center position
 	private int x;
 	private int y;
@@ -22,15 +31,39 @@ public abstract class Block implements BlockMovable {
 
 	protected abstract void initShape();
 
-	private void dropY() {
-		if (y < GameProperties.HEIGHT_PLUS_HIDDEN_START) {
-			++y;
-		}
-	}
-
 	@Override
-	public void recoverY() {
-		--y;
+	public void doKeyEvent(Character input, final boolean[][] map) {
+		switch (input) {
+		case 'j':
+			moveLeft(map);
+			break;
+		case 'l':
+			moveRight(map);
+			break;
+		case 'k':
+			dropY();
+			break;
+		case 'd': // AntiClockWise
+			if (isTop()) {
+				return;
+			}
+			rotateAntiClockWise();
+			if (!isPossibleToRotate(map)) {
+				rotateClockWise();
+			}
+			break;
+		case 'f': // ClockWise
+			if (isTop()) {
+				return;
+			}
+			rotateClockWise();
+			if (!isPossibleToRotate(map)) {
+				rotateAntiClockWise();
+			}
+			break;
+		default:
+			break;
+		}
 	}
 
 	private void moveLeft(final boolean[][] map) {
@@ -69,62 +102,17 @@ public abstract class Block implements BlockMovable {
 		return false;
 	}
 
-	@Override
-	public boolean isPossibleToPut(final boolean map[][]) {
-		int nx, ny;
-		for (int row = 0; row < shapeSize; row++) {
-			for (int col = 0; col < shapeSize; col++) {
-				if (blockShape[row][col]) {
-					nx = x + (col - 1);
-					ny = y + (row - 1);
-
-					// touchDown
-					if (map[ny][nx]) {
-						return false;
-					}
-				}
-			}
-		}
-		return true;
-	}
-
-	@Override
-	public void doKeyEvent(Character input, final boolean[][] map) {
-		switch (input) {
-		case 'j':
-			moveLeft(map);
-			break;
-		case 'l':
-			moveRight(map);
-			break;
-		case 'k':
-			dropY();
-			break;
-		case 'd': // AntiClockWise
-			if (isTop()) {
-				return;
-			}
-			rotateAntiClockWise();
-			if (!isPossibleToRotate(map)) {
-				rotateClockWise();
-			}
-			break;
-		case 'f': // ClockWise
-			if (isTop()) {
-				return;
-			}
-			rotateClockWise();
-			if (!isPossibleToRotate(map)) {
-				rotateAntiClockWise();
-			}
-			break;
-		default:
-			break;
+	private void dropY() {
+		if (y < GameProperties.HEIGHT_PLUS_HIDDEN_START) {
+			++y;
 		}
 	}
 
-	public String toString() {
-		return "[x:" + x + ", y:" + y + "]";
+	private boolean isTop() {
+		if (y == 0) {
+			return true;
+		}
+		return false;
 	}
 
 	private void rotateClockWise() {
@@ -153,26 +141,6 @@ public abstract class Block implements BlockMovable {
 		}
 	}
 
-	private boolean isTop() {
-		if (y == 0) {
-			return true;
-		}
-		return false;
-	}
-
-	/* 
-	 * default setting 3 X 3
-	 * 1) +
-	 * 2) x
-	 */
-	// x, y
-	private static int mask[][] = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 }, { 1, -1 }, { 1, 1 }, { -1, 1 },
-			{ -1, -1 } };
-
-	protected int[][] getMask() {
-		return mask;
-	}
-
 	protected boolean isPossibleToRotate(final boolean[][] map) {
 		int cx, cy;
 		int[][] mask = getMask();
@@ -195,6 +163,10 @@ public abstract class Block implements BlockMovable {
 		return true;
 	}
 
+	protected int[][] getMask() {
+		return mask;
+	}
+
 	private boolean isOverlapped(int cx, int cy, final boolean[][] map) {
 		int ny, nx;
 		for (int row = 0; row < shapeSize; row++) {
@@ -214,6 +186,30 @@ public abstract class Block implements BlockMovable {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public void recoverY() {
+		--y;
+	}
+
+	@Override
+	public boolean isPossibleToPut(final boolean map[][]) {
+		int nx, ny;
+		for (int row = 0; row < shapeSize; row++) {
+			for (int col = 0; col < shapeSize; col++) {
+				if (blockShape[row][col]) {
+					nx = x + (col - 1);
+					ny = y + (row - 1);
+
+					// touchDown
+					if (map[ny][nx]) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
 	}
 
 	@Override
