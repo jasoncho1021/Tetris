@@ -4,6 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import tetris.block.BlockContainer;
+import tetris.block.BlockMovable;
+import tetris.console.InputConsole;
+import tetris.console.TetrisInputListener;
+
 /**
  * ubuntu bash 창에서 play 가능한 상태
  * --> bash 옵션을 사용하여 화면에 출력된 문자열들을 덮어쓰거나 입력 키값을 엔터 없이 받는다. 
@@ -24,25 +29,19 @@ import java.io.InputStreamReader;
  *
  */
 
-public class TetrisSafe {
+public class TetrisGame {
+
+	private BlockMovable block;
+	private BlockContainer blockContainer = BlockContainer.getInstance();
+	private InputConsole inputConsole;
 
 	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
-
-	private Block block;
-
-	public static void main(String[] args) {
-		TetrisSafe tetris = new TetrisSafe();
-		tetris.start();
-	}
+	private boolean isGameOver = false;
 
 	private void start() {
-		initBlock();
 		initBorder();
-		printAndListen();
-	}
-
-	private void initBlock() {
-		Block.scan(getClass().getPackage().getName());
+		initKeyListener();
+		gameStart();
 	}
 
 	private void initBorder() {
@@ -58,13 +57,20 @@ public class TetrisSafe {
 		}
 	}
 
-	private boolean isGameOver = false;
+	private void initKeyListener() {
+		inputConsole = new InputConsole(new TetrisInputListener() {
 
-	private void printAndListen() {
-		NumbersConsole numberConsole = new NumbersConsole(this);
-		Thread keyListeningThread = new Thread(numberConsole);
+			@Override
+			public void receiveKey(char input) {
+				rerender(input);
+			}
+
+		});
+		Thread keyListeningThread = new Thread(inputConsole);
 		keyListeningThread.start();
+	}
 
+	private void gameStart() {
 		int gameState = 2;
 		System.out.print(drawMap());
 		setNewBlock();
@@ -103,15 +109,14 @@ public class TetrisSafe {
 			}
 		}
 
-		numberConsole.cancel();
+		inputConsole.cancel();
 	}
 
 	private void setNewBlock() {
-		block = Block.getNewBlock();
+		block = blockContainer.getNewBlock();
 	}
 
-	// synchronized
-	synchronized private int rerender(Character input) {
+	private synchronized int rerender(Character input) {
 		int gameState = 1;
 
 		removePreviousFallingBlockFromMap();
@@ -175,7 +180,7 @@ public class TetrisSafe {
 					if (row == GameProperties.HEIGHT_PLUS_HIDDEN_START) {
 						sb.append(" ");
 					} else {
-						sb.append(Integer.toHexString(lineNum % 16));
+						sb.append(Integer.toHexString(lineNum));
 					}
 				} else if (map[row][col]) {
 					if (row == GameProperties.HEIGHT_PLUS_HIDDEN_START) {
@@ -188,7 +193,10 @@ public class TetrisSafe {
 				}
 			}
 			sb.append("\n");
-			lineNum++;
+			lineNum = (++lineNum) % 16;
+			if (lineNum == 0) {
+				lineNum++;
+			}
 		}
 		return sb.toString();
 	}
@@ -232,10 +240,6 @@ public class TetrisSafe {
 		}
 	}
 
-	void receiveKey(char input) {
-		rerender(input);
-	}
-
 	private void erase(int rowsToErase) {
 		String home = System.getenv("HOME");
 		String path = home + "/multilineEraser.sh";
@@ -255,6 +259,11 @@ public class TetrisSafe {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static void main(String[] args) {
+		TetrisGame tetris = new TetrisGame();
+		tetris.start();
 	}
 
 }

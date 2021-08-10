@@ -1,4 +1,4 @@
-package tetris;
+package tetris.block;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 
-public class DiContainer {
+public class DiScanner {
 
 	public static List<Class<?>> scanPackageAndGetClass(String packageName, Class<?> targetClass) {
 		Class<?>[] classes;

@@ -1,4 +1,7 @@
-package tetris;
+package tetris.block.types;
+
+import tetris.block.Block;
+import tetris.block.TetrisBlock;
 
 /**
  * x,y means the center point of block rotation == @ 
@@ -15,7 +18,7 @@ public class BlockAr extends Block {
 	}
 
 	@Override
-	void initShape() {
+	protected void initShape() {
 		// [y][x]
 		blockShape[1][0] = true;
 		blockShape[1][1] = true;

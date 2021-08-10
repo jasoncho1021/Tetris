@@ -1,19 +1,19 @@
-package tetris;
+package tetris.console;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class NumbersConsole implements Runnable {
+public class InputConsole implements Runnable {
 
 	private String ttyConfig;
 
 	private boolean isCanceled = false;
 
-	private TetrisSafe tetris;
+	private TetrisInputListener tetrisInputListener;
 
-	NumbersConsole(TetrisSafe tetris) {
-		this.tetris = tetris;
+	public InputConsole(TetrisInputListener tetrisInputListener) {
+		this.tetrisInputListener = tetrisInputListener;
 	}
 
 	public void cancel() {
@@ -25,11 +25,8 @@ public class NumbersConsole implements Runnable {
 			setTerminalToCBreak();
 
 			while (!isCanceled) {
-
 				if (System.in.available() != 0) {
-
-					tetris.receiveKey((char) System.in.read());
-
+					tetrisInputListener.receiveKey((char) System.in.read());
 				}
 
 			} // end while

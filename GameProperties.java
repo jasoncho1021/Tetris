@@ -1,9 +1,13 @@
 package tetris;
 
 /**
- * X(hidden) = 2
+ * "GAME BOARD"
+ * 
+ * X(hidden start height) = 2
  * H = 3
  * W = 5
+ * B = 1 // Bottom Border
+ * S = 2 // Side Bordersf
  * 
  *0		S  X  S
  *1		S  X  S
@@ -17,20 +21,21 @@ package tetris;
  *
  */
 public class GameProperties {
-	final static private int BOTTOM_BORDER = 1;
-	final static private int SIDE_BORDERS = 2;
-	final static int HIDDEN_START_HEIGHT = 2;
-	final static private int HEIGHT = 30;
-	final static int HEIGHT_PLUS_BOTTOM_BORDER = HEIGHT + BOTTOM_BORDER;
-	final static int HEIGHT_PLUS_HIDDEN_START = HEIGHT + HIDDEN_START_HEIGHT;
+	private static final int BOTTOM_BORDER = 1;
+	private static final int SIDE_BORDERS = 2;
+	private static final int HEIGHT = 30;
 
-	final static int HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER = HEIGHT_PLUS_HIDDEN_START + BOTTOM_BORDER;
+	static final int WIDTH = 12;
 
-	final static int WIDTH = 12;
-	final static int WIDTH_PLUS_SIDE_BORDERS = WIDTH + SIDE_BORDERS;
+	public static final int HIDDEN_START_HEIGHT = 2;
+	public static final int HEIGHT_PLUS_BOTTOM_BORDER = HEIGHT + BOTTOM_BORDER;
+	public static final int HEIGHT_PLUS_HIDDEN_START = HEIGHT + HIDDEN_START_HEIGHT;
+	public static final int HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER = HEIGHT_PLUS_HIDDEN_START + BOTTOM_BORDER;
+	public static final int WIDTH_PLUS_SIDE_BORDERS = WIDTH + SIDE_BORDERS;
 
-	static boolean isIn(int x, int y) {
-		if(0 <= y && y < GameProperties.HEIGHT_PLUS_HIDDEN_START && 0 < x && x < (GameProperties.WIDTH_PLUS_SIDE_BORDERS - 1)) {
+	public static boolean isIn(int x, int y) {
+		if (0 <= y && y < GameProperties.HEIGHT_PLUS_HIDDEN_START && 0 < x
+				&& x < (GameProperties.WIDTH_PLUS_SIDE_BORDERS - 1)) {
 			return true;
 		}
 		return false;

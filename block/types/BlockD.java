@@ -1,4 +1,7 @@
-package tetris;
+package tetris.block.types;
+
+import tetris.block.Block;
+import tetris.block.TetrisBlock;
 
 /**
  *  XXXX
@@ -14,7 +17,7 @@ public class BlockD extends Block {
 	}
 
 	@Override
-	void initShape() {
+	protected void initShape() {
 		blockShape[1][1] = true;
 		blockShape[1][2] = true;
 		blockShape[2][1] = true;

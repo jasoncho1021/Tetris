@@ -1,62 +1,26 @@
-package tetris;
+package tetris.block;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.util.List;
-import java.util.Random;
+import tetris.GameProperties;
 
-@Retention(RetentionPolicy.RUNTIME)
-@interface TetrisBlock {
-}
+public abstract class Block implements BlockMovable {
 
-public abstract class Block {
+	// rotation center position
+	private int x;
+	private int y;
+	private int shapeSize;
 
-	static Random random;
-	static List<Class<?>> clazzList;
-
-	static {
-		random = new Random();
-	}
-
-	static void scan(String packageName) {
-		clazzList = DiContainer.scanPackageAndGetClass(packageName, TetrisBlock.class);
-	}
-
-	static Block getNewBlock() {
-		int idx = random.nextInt(clazzList.size());
-		Class<?> c = clazzList.get(idx);
-		try {
-			return (Block) c.newInstance();
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	// center position
-	protected int x;
-	protected int y;
 	protected boolean[][] blockShape;
-	protected int shapeSize;
-	protected int dir;
 
-	Block(int shapeSize) {
+	protected Block(int shapeSize) {
 		this.x = (GameProperties.WIDTH_PLUS_SIDE_BORDERS / 2);
 		this.y = 0;
 		this.shapeSize = shapeSize;
 		this.blockShape = new boolean[shapeSize][shapeSize];
-		this.dir = 0;
 
 		initShape();
 	}
 
-	abstract void initShape();
+	protected abstract void initShape();
 
 	private void dropY() {
 		if (y < GameProperties.HEIGHT_PLUS_HIDDEN_START) {
@@ -64,7 +28,8 @@ public abstract class Block {
 		}
 	}
 
-	void recoverY() {
+	@Override
+	public void recoverY() {
 		--y;
 	}
 
@@ -80,7 +45,7 @@ public abstract class Block {
 		}
 	}
 
-	boolean isWall(int dx, final boolean[][] map) {
+	private boolean isWall(int dx, final boolean[][] map) {
 		int nx = 0;
 		int ny = 0;
 		for (int row = 0; row < shapeSize; row++) {
@@ -104,7 +69,8 @@ public abstract class Block {
 		return false;
 	}
 
-	boolean isPossibleToPut(final boolean map[][]) {
+	@Override
+	public boolean isPossibleToPut(final boolean map[][]) {
 		int nx, ny;
 		for (int row = 0; row < shapeSize; row++) {
 			for (int col = 0; col < shapeSize; col++) {
@@ -122,7 +88,8 @@ public abstract class Block {
 		return true;
 	}
 
-	protected void doKeyEvent(Character input, final boolean[][] map) {
+	@Override
+	public void doKeyEvent(Character input, final boolean[][] map) {
 		switch (input) {
 		case 'j':
 			moveLeft(map);
@@ -160,7 +127,7 @@ public abstract class Block {
 		return "[x:" + x + ", y:" + y + "]";
 	}
 
-	protected void rotateClockWise() {
+	private void rotateClockWise() {
 		boolean tmp;
 		for (int s = 0, e = shapeSize - 1; s < e; s++, e--) {
 			for (int i = s, j = e; i < e; i++, j--) {
@@ -171,10 +138,9 @@ public abstract class Block {
 				blockShape[i][e] = tmp;
 			}
 		}
-		dir = (dir + 1) % 4;
 	}
 
-	protected void rotateAntiClockWise() {
+	private void rotateAntiClockWise() {
 		boolean tmp;
 		for (int s = 0, e = shapeSize - 1; s < e; s++, e--) {
 			for (int i = s, j = e; i < e; i++, j--) {
@@ -185,7 +151,6 @@ public abstract class Block {
 				blockShape[j][s] = tmp;
 			}
 		}
-		dir = (dir - 1 + 4) % 4;
 	}
 
 	private boolean isTop() {
@@ -196,6 +161,7 @@ public abstract class Block {
 	}
 
 	/* 
+	 * default setting 3 X 3
 	 * 1) +
 	 * 2) x
 	 */
@@ -250,7 +216,8 @@ public abstract class Block {
 		return false;
 	}
 
-	void setBlockToMap(boolean map[][]) {
+	@Override
+	public void setBlockToMap(boolean map[][]) {
 		int nx, ny;
 
 		for (int row = 0; row < shapeSize; row++) {
@@ -266,7 +233,8 @@ public abstract class Block {
 		}
 	}
 
-	void remove(boolean[][] map) {
+	@Override
+	public void remove(boolean[][] map) {
 		int nx = 0;
 		int ny = 0;
 		for (int row = 0; row < shapeSize; row++) {
@@ -291,7 +259,8 @@ public abstract class Block {
 		}
 	}
 
-	boolean isCeil() {
+	@Override
+	public boolean isCeil() {
 		int topY = shapeSize;
 		topLoop: for (int row = 0; row < shapeSize; row++) {
 			for (int col = 0; col < shapeSize; col++) {

@@ -1,4 +1,7 @@
-package tetris;
+package tetris.block.types;
+
+import tetris.block.Block;
+import tetris.block.TetrisBlock;
 
 /*
  * 1. 회전 경로에 있는 장애물은 고려 안 함.
@@ -55,7 +58,7 @@ public class BlockE extends Block {
 	}
 
 	@Override
-	void initShape() {
+	protected void initShape() {
 		blockShape[1][0] = true;
 		blockShape[1][1] = true;
 		blockShape[1][2] = true;
@@ -99,7 +102,7 @@ public class BlockE extends Block {
 		return mask;
 	}
 
-	protected boolean isPossibleToRotateOld(int dir, final boolean[][] map) {
+	/*protected boolean isPossibleToRotateOld(int dir, final boolean[][] map) {
 		if (dir == 0) {
 			return moveHorizon(y, map);
 		} else if (dir == 2) { // --- , 좌우 벽,블럭 겹침 파악.
@@ -142,12 +145,12 @@ public class BlockE extends Block {
 
 		int gap;
 		if (lf) {
-			/**
+			*//**
 			 *    C
 			 *  # # # #
 			 *    | ㅣ
 			 *   L1 L2 
-			 */
+			 *//*
 			gap = x - lx;
 			if (gap == 0) { // L2
 				rx = x + 2 + 2;
@@ -196,7 +199,7 @@ public class BlockE extends Block {
 		int dy = y + 2;
 		for (int row = 2; row < 4; row++) {
 			dy = y + (row - 1);
-			if ((dy >= (GameProperties.HEIGHT - 1)) || map[dy][x]) {
+			if (dy < GameProperties.HEIGHT_PLUS_HIDDEN_START || map[dy][x]) {
 				break;
 			}
 		}
@@ -222,38 +225,6 @@ public class BlockE extends Block {
 		}
 
 		return true;
-	}
+	}*/
 
-	public static void main(String[] args) {
-		BlockE block = new BlockE();
-		block.y = 3;
-		block.testRotation();
-	}
-
-	private void testRotation() {
-
-		StringBuilder sb;
-		for (int k = 0; k < 4; k++) {
-			sb = new StringBuilder();
-
-			for (int row = 0; row < shapeSize; row++) {
-				for (int col = 0; col < shapeSize; col++) {
-					if (row == 1 && col == 1) {
-						sb.append("C");
-					} else if (blockShape[row][col]) {
-						sb.append("#");
-					} else {
-						sb.append("*");
-					}
-				}
-				sb.append("\n");
-			}
-
-			System.out.println(sb.toString());
-			System.out.println(this);
-			//rotateClockWise();
-			rotateAntiClockWise();
-		}
-
-	}
 }
