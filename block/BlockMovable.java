@@ -1,9 +1,11 @@
 package tetris.block;
 
+import tetris.JoyPad;
+
 public interface BlockMovable {
 	public void setBlockToMap(boolean map[][]);
 
-	public void doKeyEvent(Character input, final boolean[][] map);
+	public void doKeyEvent(JoyPad joyPad, final boolean[][] map);
 
 	public boolean isCeil();
 

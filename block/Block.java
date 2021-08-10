@@ -1,6 +1,7 @@
 package tetris.block;
 
 import tetris.GameProperties;
+import tetris.JoyPad;
 
 public abstract class Block implements BlockMovable {
 
@@ -20,9 +21,17 @@ public abstract class Block implements BlockMovable {
 
 	protected boolean[][] blockShape;
 
+	protected Block(int shapeSize, int y) {
+		init(shapeSize, y);
+	}
+
 	protected Block(int shapeSize) {
+		init(shapeSize, 0);
+	}
+
+	private void init(int shapeSize, int y) {
 		this.x = (GameProperties.WIDTH_PLUS_SIDE_BORDERS / 2);
-		this.y = 0;
+		this.y = y;
 		this.shapeSize = shapeSize;
 		this.blockShape = new boolean[shapeSize][shapeSize];
 
@@ -32,18 +41,18 @@ public abstract class Block implements BlockMovable {
 	protected abstract void initShape();
 
 	@Override
-	public void doKeyEvent(Character input, final boolean[][] map) {
-		switch (input) {
-		case 'j':
+	public void doKeyEvent(JoyPad joyPad, final boolean[][] map) {
+		switch (joyPad) {
+		case LEFT:
 			moveLeft(map);
 			break;
-		case 'l':
+		case RIGHT:
 			moveRight(map);
 			break;
-		case 'k':
+		case DOWN:
 			dropY();
 			break;
-		case 'd': // AntiClockWise
+		case ANTI_CLOCK_WISE_ROTATION:
 			if (isTop()) {
 				return;
 			}
@@ -52,7 +61,7 @@ public abstract class Block implements BlockMovable {
 				rotateClockWise();
 			}
 			break;
-		case 'f': // ClockWise
+		case CLOCK_WISE_ROTATION:
 			if (isTop()) {
 				return;
 			}

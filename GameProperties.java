@@ -23,7 +23,7 @@ package tetris;
 public class GameProperties {
 	private static final int BOTTOM_BORDER = 1;
 	private static final int SIDE_BORDERS = 2;
-	private static final int HEIGHT = 30;
+	private static final int HEIGHT = 20;
 
 	static final int WIDTH = 12;
 
@@ -40,4 +40,8 @@ public class GameProperties {
 		}
 		return false;
 	}
+}
+
+enum BlockState {
+	FALLING, TOUCH_DOWN, TOUCH_CEIL
 }

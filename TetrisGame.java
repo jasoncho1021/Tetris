@@ -6,11 +6,15 @@ import java.io.InputStreamReader;
 
 import tetris.block.BlockContainer;
 import tetris.block.BlockMovable;
-import tetris.console.InputConsole;
-import tetris.console.TetrisInputListener;
+import tetris.queue.InputQueue;
+import tetris.queue.KeyInput;
+import tetris.queue.TetrisProducer;
+import tetris.queue.TetrisQueue;
+import tetris.queue.producer.Producer;
+import tetris.queue.producer.console.InputConsole;
 
 /**
- * ubuntu bash 창에서 play 가능한 상태
+ * ubuntu bash 창에서 play 가능합니다.
  * --> bash 옵션을 사용하여 화면에 출력된 문자열들을 덮어쓰거나 입력 키값을 엔터 없이 받는다. 
  * 
  * "multilineEraser.sh"
@@ -33,10 +37,11 @@ public class TetrisGame {
 
 	private BlockMovable block;
 	private BlockContainer blockContainer = BlockContainer.getInstance();
-	private InputConsole inputConsole;
+	private TetrisQueue tetrisQueue = InputQueue.getInstance();
+	private TetrisProducer inputConsole;
+	private TetrisProducer producer;
 
 	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
-	private boolean isGameOver = false;
 
 	private void start() {
 		initBorder();
@@ -58,87 +63,87 @@ public class TetrisGame {
 	}
 
 	private void initInputListener() {
-		inputConsole = new InputConsole(new TetrisInputListener() {
+		inputConsole = new InputConsole(this.tetrisQueue);
+		Thread consoleThread = new Thread(inputConsole);
+		consoleThread.start();
 
-			@Override
-			public void receiveKey(char input) {
-				rerender(input);
-			}
-
-		});
-		Thread keyListeningThread = new Thread(inputConsole);
-		keyListeningThread.start();
+		producer = new Producer(this.tetrisQueue);
+		Thread producerThread = new Thread(producer);
+		producerThread.start();
 	}
 
+	/**
+	 *  main.gameStart() == Consumer
+	 */
 	private void gameStart() {
-		int gameState = 2;
+		BlockState blockState = BlockState.FALLING;
+		KeyInput keyInput;
+
 		System.out.print(drawMap());
 		setNewBlock();
 
-		while (!isGameOver) {
+		while (true) {
+			keyInput = new KeyInput();
 
-			// keep falling
-			while (true) {
-				try {
-					gameState = rerender(new Character('k'));
+			// Consuming
+			// blocking if queue is empty
+			tetrisQueue.get(keyInput);
 
-					/**
-					 * 
-					 * 
-					 *  removePerfectLine 한 뒤
-					 *  이 찰나에
-					 *  keyboard 가 rerender 호출한다.
-					 *  block.remove 호출해서 에러남.
-					 * 
-					 *  setNewBlock을 rerender에 넣어서 해결.
-					 * 
-					 */
+			if (keyInput.joyPad == JoyPad.QUIT) {
+				break;
+			}
 
-					if (gameState == -1) {
-						isGameOver = true;
-						break;
-					} else if (gameState == 0) {
-						break;
-					}
+			blockState = rerender(keyInput.joyPad);
 
-					Thread.sleep(1000); // hold lock from main thread, then rerender?
-
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+			if (blockState == BlockState.TOUCH_CEIL) {
+				break;
 			}
 		}
 
-		inputConsole.cancel();
+		inputConsole.stopProduce();
+		producer.stopProduce();
 	}
 
 	private void setNewBlock() {
 		block = blockContainer.getNewBlock();
 	}
 
-	private synchronized int rerender(Character input) {
-		int gameState = 1;
+	/**
+	 * 기존 동시 접근 케이스 때문에 --> synchronized 적용했다.
+	 * main -> rerender
+	 * Console -> rerender
+	 * 
+	 * inputConsole 이 rerender 호출했던 방식에서 tetrisQueue.add 만 하는 방식으로 전환.
+	 * 
+	 * 수정 후) Polling 방식, tetrisQueue.get 내부에서 while문으로 blocking 시킨다.
+	 * main -> rerender
+	 * Console -> TetrisQueue
+	 * 
+	 * main만 접근하므로 synchronized 제거.
+	 */
+	private BlockState rerender(JoyPad joyPad) {
+		BlockState blockState = BlockState.FALLING;
 
 		removePreviousFallingBlockFromMap();
 
-		block.doKeyEvent(input, map);
+		block.doKeyEvent(joyPad, map);
 
 		/*
 		 * doKeyEvent -> 안 겹치면 이동 및 회전, 겹치면 안 겹쳤던 직전 상태 유지. 
 		 * isTouchDown -> isPossibleToPut -> 겹치는 여부 확인. 
 		 */
 		if (isTouchDown()) {
-			gameState = 0;
+			blockState = BlockState.TOUCH_DOWN;
 
 			if (block.isCeil()) {
-				gameState = -1;
-				return gameState;
+				blockState = BlockState.TOUCH_CEIL;
+				return blockState;
 			}
 		}
 
 		block.setBlockToMap(map);
 
-		if (gameState == 0) {
+		if (blockState == BlockState.TOUCH_DOWN) {
 			removePerfectLine();
 			setNewBlock();
 		}
@@ -148,7 +153,7 @@ public class TetrisGame {
 
 		System.out.print(drawMap());
 
-		return gameState; // keep falling
+		return blockState;
 	}
 
 	private void removePreviousFallingBlockFromMap() {

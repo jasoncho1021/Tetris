@@ -1,35 +1,34 @@
-package tetris.console;
+package tetris.queue.producer.console;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class InputConsole implements Runnable {
+import tetris.queue.KeyInput;
+import tetris.queue.TetrisProducer;
+import tetris.queue.TetrisQueue;
+
+public class InputConsole extends TetrisProducer {
 
 	private String ttyConfig;
 
-	private boolean isCanceled = false;
+	private TetrisQueue tetrisQueue;
 
-	private TetrisInputListener tetrisInputListener;
-
-	public InputConsole(TetrisInputListener tetrisInputListener) {
-		this.tetrisInputListener = tetrisInputListener;
-	}
-
-	public void cancel() {
-		isCanceled = true;
+	public InputConsole(TetrisQueue tetrisQueue) {
+		this.tetrisQueue = tetrisQueue;
 	}
 
 	public void listenKey() {
 		try {
 			setTerminalToCBreak();
 
-			while (!isCanceled) {
+			startProduce();
+			while (isRunning()) {
 				if (System.in.available() != 0) {
-					tetrisInputListener.receiveKey((char) System.in.read());
+					tetrisQueue.add(new KeyInput((char) System.in.read()));
 				}
-
 			} // end while
+
 		} catch (IOException e) {
 			System.err.println("IOException");
 		} catch (InterruptedException e) {
