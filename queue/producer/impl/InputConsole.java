@@ -1,12 +1,12 @@
-package tetris.queue.producer.console;
+package tetris.queue.producer.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import tetris.queue.KeyInput;
-import tetris.queue.TetrisProducer;
 import tetris.queue.TetrisQueue;
+import tetris.queue.producer.TetrisProducer;
 
 public class InputConsole extends TetrisProducer {
 

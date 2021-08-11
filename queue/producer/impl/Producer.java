@@ -1,8 +1,8 @@
-package tetris.queue.producer;
+package tetris.queue.producer.impl;
 
 import tetris.queue.KeyInput;
-import tetris.queue.TetrisProducer;
 import tetris.queue.TetrisQueue;
+import tetris.queue.producer.TetrisProducer;
 
 public class Producer extends TetrisProducer {
 
