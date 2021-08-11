@@ -6,12 +6,12 @@ import java.io.InputStreamReader;
 
 import tetris.block.BlockContainer;
 import tetris.block.BlockMovable;
-import tetris.queue.InputQueue;
 import tetris.queue.KeyInput;
-import tetris.queue.TetrisProducer;
 import tetris.queue.TetrisQueue;
-import tetris.queue.producer.Producer;
-import tetris.queue.producer.console.InputConsole;
+import tetris.queue.impl.InputQueue;
+import tetris.queue.producer.TetrisProducer;
+import tetris.queue.producer.impl.InputConsole;
+import tetris.queue.producer.impl.Producer;
 
 /**
  * ubuntu bash 창에서 play 가능합니다.
@@ -85,7 +85,7 @@ public class TetrisGame {
 		while (true) {
 			keyInput = new KeyInput();
 
-			// Consuming
+			// polling, Consuming
 			// blocking if queue is empty
 			tetrisQueue.get(keyInput);
 

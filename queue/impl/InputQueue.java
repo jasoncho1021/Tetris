@@ -1,7 +1,10 @@
-package tetris.queue;
+package tetris.queue.impl;
 
 import java.util.LinkedList;
 import java.util.Queue;
+
+import tetris.queue.KeyInput;
+import tetris.queue.TetrisQueue;
 
 public class InputQueue implements TetrisQueue {
 	private Queue<KeyInput> queue;

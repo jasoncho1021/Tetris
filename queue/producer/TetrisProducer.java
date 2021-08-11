@@ -1,4 +1,4 @@
-package tetris.queue;
+package tetris.queue.producer;
 
 public abstract class TetrisProducer implements Runnable {
 	private boolean isRunning;
