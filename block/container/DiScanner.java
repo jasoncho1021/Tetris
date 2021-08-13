@@ -3,20 +3,37 @@ package tetris.block.container;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DiScanner {
 
-	public static List<Class<?>> scanPackageAndGetClass(String packageName, Class<?> targetClass) {
-		Class<?>[] classes;
-		List<Class<?>> list = new LinkedList<>();
+	public static List<Class<?>> scanPackageAndGetClass(Class<?> callerClass, Class<?> targetClass) {
+		//Class<?>[] classes;
+		List<Class<?>> classes;
+		List<Class<?>> targetAnnotatedClasses = new LinkedList<>();
+		String packageName = callerClass.getPackage().getName();
+
+		packageName = packageName.substring(0, packageName.indexOf("."));
 
 		try {
 			classes = getClasses(packageName);
+
+			if (classes.size() == 0) {
+				classes = getClassesFromJar(callerClass, packageName);
+			}
+
 			for (Class<?> c : classes) {
 				Annotation[] annotations = c.getDeclaredAnnotations();
 				for (Annotation annotation : annotations) {
@@ -26,7 +43,7 @@ public class DiScanner {
 						break;
 					}*/
 					if (targetClass.isAssignableFrom(annotation.getClass())) {
-						list.add(c);
+						targetAnnotatedClasses.add(c);
 						break;
 					}
 				}
@@ -37,7 +54,7 @@ public class DiScanner {
 			e.printStackTrace();
 		}
 
-		return list;
+		return targetAnnotatedClasses;
 	}
 
 	/**
@@ -50,21 +67,21 @@ public class DiScanner {
 	 * @throws ClassNotFoundException
 	 * @throws IOException
 	 */
-	public static Class[] getClasses(String packageName) throws ClassNotFoundException, IOException {
+	private static List<Class<?>> getClasses(String packageName) throws ClassNotFoundException, IOException {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		assert classLoader != null;
 		String path = packageName.replace('.', '/');
 		Enumeration resources = classLoader.getResources(path);
-		List<File> dirs = new ArrayList();
+		List<File> dirs = new ArrayList<>();
 		while (resources.hasMoreElements()) {
 			URL resource = (URL) resources.nextElement();
 			dirs.add(new File(resource.getFile()));
 		}
-		ArrayList classes = new ArrayList();
+		List<Class<?>> classes = new ArrayList<>();
 		for (File directory : dirs) {
 			classes.addAll(findClasses(directory, packageName));
 		}
-		return (Class[]) classes.toArray(new Class[classes.size()]);
+		return classes;
 	}
 
 	/**
@@ -77,8 +94,8 @@ public class DiScanner {
 	 * @return The classes
 	 * @throws ClassNotFoundException
 	 */
-	private static List findClasses(File directory, String packageName) throws ClassNotFoundException {
-		List classes = new ArrayList();
+	private static List<Class<?>> findClasses(File directory, String packageName) throws ClassNotFoundException {
+		List<Class<?>> classes = new ArrayList<>();
 		if (!directory.exists()) {
 			return classes;
 		}
@@ -93,6 +110,49 @@ public class DiScanner {
 			}
 		}
 		return classes;
+	}
+
+	private static List<Class<?>> getClassesFromJar(Class<?> callerClass, String packageName) {
+		List<Class<?>> classes = new ArrayList<>();
+		try {
+			List<Path> result = getPathsFromResourceJAR(callerClass, packageName);
+			for (Path path : result) {
+
+				String filePathInJAR = path.toString();
+
+				if (filePathInJAR.startsWith("/")) {
+					filePathInJAR = filePathInJAR.substring(1, filePathInJAR.length());
+				}
+
+				filePathInJAR = filePathInJAR.replace("/", ".");
+
+				if (filePathInJAR.endsWith(".class")) {
+					filePathInJAR = filePathInJAR.substring(0, filePathInJAR.length() - 6);
+				}
+				classes.add(Class.forName(filePathInJAR));
+			}
+
+		} catch (URISyntaxException | IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return classes;
+	}
+
+	// Get all paths from a folder that inside the JAR file
+	private static List<Path> getPathsFromResourceJAR(Class<?> callerClass, String folder)
+			throws URISyntaxException, IOException {
+
+		List<Path> result;
+
+		// get path of the current running JAR
+		String jarPath = callerClass.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+
+		URI uri = URI.create("jar:file:" + jarPath);
+		try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+			result = Files.walk(fs.getPath(folder)).filter(Files::isRegularFile).collect(Collectors.toList());
+		}
+
+		return result;
 	}
 
 }

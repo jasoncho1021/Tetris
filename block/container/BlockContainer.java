@@ -13,7 +13,7 @@ public class BlockContainer {
 
 	private BlockContainer() {
 		random = new Random();
-		scan(getClass().getPackage().getName());
+		scan(getClass());
 	}
 
 	public static BlockContainer getInstance() {
@@ -24,8 +24,8 @@ public class BlockContainer {
 		private static final BlockContainer INSTANCE = new BlockContainer();
 	}
 
-	private void scan(String packageName) {
-		clazzList = DiScanner.scanPackageAndGetClass(packageName, TetrisBlock.class);
+	private void scan(Class<?> clazz) {
+		clazzList = DiScanner.scanPackageAndGetClass(clazz, TetrisBlock.class);
 	}
 
 	public Block getNewBlock() {

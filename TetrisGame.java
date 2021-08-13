@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import tetris.block.BlockContainer;
 import tetris.block.BlockMovable;
+import tetris.block.container.BlockContainer;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
 import tetris.queue.impl.InputQueue;
