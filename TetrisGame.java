@@ -40,6 +40,8 @@ public class TetrisGame {
 	private TetrisQueue tetrisQueue = InputQueue.getInstance();
 	private TetrisProducer inputConsole;
 	private TetrisProducer producer;
+	private Thread consoleThread;
+	private Thread producerThread;
 
 	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 
@@ -64,11 +66,11 @@ public class TetrisGame {
 
 	private void initInputListener() {
 		inputConsole = new InputConsole(this.tetrisQueue);
-		Thread consoleThread = new Thread(inputConsole);
+		consoleThread = new Thread(inputConsole);
 		consoleThread.start();
 
 		producer = new Producer(this.tetrisQueue);
-		Thread producerThread = new Thread(producer);
+		producerThread = new Thread(producer);
 		producerThread.start();
 	}
 
@@ -102,6 +104,14 @@ public class TetrisGame {
 
 		inputConsole.stopProduce();
 		producer.stopProduce();
+		producerThread.interrupt();
+
+		try {
+			consoleThread.join();
+			producerThread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void setNewBlock() {

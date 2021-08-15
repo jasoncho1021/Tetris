@@ -28,7 +28,6 @@ public class InputConsole extends TetrisProducer {
 					tetrisQueue.add(new KeyInput((char) System.in.read()));
 				}
 			} // end while
-
 		} catch (IOException e) {
 			System.err.println("IOException");
 		} catch (InterruptedException e) {
