@@ -19,6 +19,6 @@ public enum JoyPad {
 				return joyPad;
 			}
 		}
-		throw new RuntimeException();
+		return null;
 	}
 }

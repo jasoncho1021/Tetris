@@ -18,7 +18,7 @@ public class InputConsole extends TetrisProducer {
 		this.tetrisQueue = tetrisQueue;
 	}
 
-	public void listenKey() {
+	private void listenKey() {
 		try {
 			setTerminalToCBreak();
 

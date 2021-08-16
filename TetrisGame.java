@@ -91,6 +91,10 @@ public class TetrisGame {
 			// blocking if queue is empty
 			tetrisQueue.get(keyInput);
 
+			if (keyInput.joyPad == null) {
+				continue;
+			}
+
 			if (keyInput.joyPad == JoyPad.QUIT) {
 				break;
 			}
