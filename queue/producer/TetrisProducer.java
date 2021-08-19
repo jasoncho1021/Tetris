@@ -11,7 +11,7 @@ public abstract class TetrisProducer implements Runnable {
 		this.isRunning = false;
 	}
 
-	protected boolean isRunning() {
+	public boolean isRunning() {
 		return isRunning;
 	}
 }

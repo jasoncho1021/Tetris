@@ -3,6 +3,7 @@ package tetris.block.container;
 import java.util.List;
 import java.util.Random;
 
+import tetris.GameException;
 import tetris.block.Block;
 import tetris.block.TetrisBlock;
 
@@ -29,19 +30,12 @@ public class BlockContainer {
 	}
 
 	public Block getNewBlock() {
-		int idx = random.nextInt(clazzList.size());
-		Class<?> c = clazzList.get(idx);
 		try {
+			int idx = random.nextInt(clazzList.size());
+			Class<?> c = clazzList.get(idx);
 			return (Block) c.newInstance();
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		} catch (InstantiationException e) {
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
-			e.printStackTrace();
+		} catch (RuntimeException | InstantiationException | IllegalAccessException e) {
+			throw new GameException(e);
 		}
-		return null;
 	}
 }

@@ -36,8 +36,8 @@ import tetris.queue.producer.impl.Producer;
 public class TetrisGame {
 
 	private BlockMovable block;
-	private BlockContainer blockContainer = BlockContainer.getInstance();
-	private TetrisQueue tetrisQueue = InputQueue.getInstance();
+	private BlockContainer blockContainer;
+	private TetrisQueue tetrisQueue;
 	private TetrisProducer inputConsole;
 	private TetrisProducer producer;
 	private Thread consoleThread;
@@ -46,9 +46,31 @@ public class TetrisGame {
 	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 
 	private void start() {
-		initBorder();
-		initInputListener();
-		gameStart();
+		try {
+			initBorder();
+			initInputListener();
+			gameStart();
+		} catch (GameException e) {
+			e.printGameExceptionStack();
+		} finally {
+			inputConsole.stopProduce();
+			//consoleThread.interrupt();
+			producer.stopProduce();
+			producerThread.interrupt();
+
+			try {
+
+				System.out.println(inputConsole.isRunning());
+				consoleThread.join();
+				System.out.println("console join");
+
+				producerThread.join();
+				System.out.println("producer join");
+
+			} catch (InterruptedException ie) {
+				System.out.println("join interrupted");
+			}
+		}
 	}
 
 	private void initBorder() {
@@ -65,6 +87,8 @@ public class TetrisGame {
 	}
 
 	private void initInputListener() {
+		this.tetrisQueue = InputQueue.getInstance();
+
 		inputConsole = new InputConsole(this.tetrisQueue);
 		consoleThread = new Thread(inputConsole);
 		consoleThread.start();
@@ -78,12 +102,13 @@ public class TetrisGame {
 	 *  main.gameStart() == Consumer
 	 */
 	private void gameStart() {
-		BlockState blockState = BlockState.FALLING;
-		KeyInput keyInput;
 
-		System.out.print(drawMap());
+		renderGameBoard(setGameBoard());
+
+		blockContainer = BlockContainer.getInstance();
 		setNewBlock();
 
+		KeyInput keyInput;
 		while (true) {
 			keyInput = new KeyInput();
 
@@ -91,7 +116,7 @@ public class TetrisGame {
 			// blocking if queue is empty
 			tetrisQueue.get(keyInput);
 
-			if (keyInput.joyPad == null) {
+			if (keyInput.joyPad == JoyPad.UNDEFINED) {
 				continue;
 			}
 
@@ -99,9 +124,7 @@ public class TetrisGame {
 				break;
 			}
 
-			blockState = rerender(keyInput.joyPad);
-
-			if (blockState == BlockState.TOUCH_CEIL) {
+			if (!moveBlockAndRender(keyInput.joyPad)) {
 				break;
 			}
 		}
@@ -114,60 +137,69 @@ public class TetrisGame {
 			consoleThread.join();
 			producerThread.join();
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			throw new GameException(e);
 		}
 	}
 
 	private void setNewBlock() {
-		block = blockContainer.getNewBlock();
+		try {
+			Thread.sleep(2000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		throw new GameException(new ArithmeticException());
+		//block = blockContainer.getNewBlock();
 	}
 
-	/**
-	 * 기존 동시 접근 케이스 때문에 --> synchronized 적용했다.
-	 * main -> rerender
-	 * Console -> rerender
-	 * 
-	 * inputConsole 이 rerender 호출했던 방식에서 tetrisQueue.add 만 하는 방식으로 전환.
-	 * 
-	 * 수정 후) Polling 방식, tetrisQueue.get 내부에서 while문으로 blocking 시킨다.
-	 * main -> rerender
-	 * Console -> TetrisQueue
-	 * 
-	 * main만 접근하므로 synchronized 제거.
-	 */
-	private BlockState rerender(JoyPad joyPad) {
-		BlockState blockState = BlockState.FALLING;
-
+	private void moveBlock(JoyPad joyPad) {
 		removePreviousFallingBlockFromMap();
-
 		block.doKeyEvent(joyPad, map);
+	}
 
+	private boolean moveBlockAndRender(JoyPad joyPad) {
+
+		moveBlock(joyPad);
+
+		if (combineBlockToMap() == BlockState.TOUCH_CEIL) {
+			return false;
+		}
+
+		render();
+
+		return true; // TOUCH_DOWN, FALLING
+	}
+
+	private BlockState combineBlockToMap() {
 		/*
-		 * doKeyEvent -> 안 겹치면 이동 및 회전, 겹치면 안 겹쳤던 직전 상태 유지. 
+		 * moveBlock -> 안 겹치면 이동 및 회전, 겹치면 안 겹쳤던 직전 상태 유지. 
 		 * isTouchDown -> isPossibleToPut -> 겹치는 여부 확인. 
 		 */
+		BlockState blockState;
+
 		if (isTouchDown()) {
-			blockState = BlockState.TOUCH_DOWN;
-
 			if (block.isCeil()) {
-				blockState = BlockState.TOUCH_CEIL;
-				return blockState;
+				return BlockState.TOUCH_CEIL;
 			}
-		}
 
-		block.setBlockToMap(map);
+			blockState = BlockState.TOUCH_DOWN;
+			block.setBlockToMap(map);
 
-		if (blockState == BlockState.TOUCH_DOWN) {
 			removePerfectLine();
 			setNewBlock();
+		} else {
+			// FALLING
+			blockState = BlockState.FALLING;
+			block.setBlockToMap(map);
 		}
 
-		// 콘솔 화면 전체 삭제
-		erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER);
-
-		System.out.print(drawMap());
-
 		return blockState;
+	}
+
+	private void render() {
+		// 콘솔 화면 전체 삭제
+		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER));
+		renderGameBoard(setGameBoard());
 	}
 
 	private void removePreviousFallingBlockFromMap() {
@@ -190,7 +222,7 @@ public class TetrisGame {
 		}
 	}
 
-	private String drawMap() {
+	private String setGameBoard() {
 		StringBuilder sb = new StringBuilder();
 		int lineNum = 1;
 		for (int row = GameProperties.HIDDEN_START_HEIGHT; row < GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER; row++) {
@@ -259,12 +291,18 @@ public class TetrisGame {
 		}
 	}
 
-	private void erase(int rowsToErase) {
-		String home = System.getenv("HOME");
-		String path = home + "/multilineEraser.sh";
+	private String erase(int rowsToErase) {
+		/*
+		 * dir
+		 * 1. eclipse : project/
+		 * 2. cosole : project/bin
+		 */
+		String dir = System.getProperty("user.dir");
+		String path = dir + "/multilineEraser.sh";
 
 		String[] cmd = { path, String.valueOf(rowsToErase) };
 
+		String gameBoard = "";
 		try {
 			Process process = Runtime.getRuntime().exec(cmd);
 			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -273,16 +311,21 @@ public class TetrisGame {
 			while ((line = reader.readLine()) != null) {
 				builder.append(line);
 			}
-			String result = builder.toString();
-			System.out.print(result);
+			gameBoard = builder.toString();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new GameException(e);
 		}
+		return gameBoard;
+	}
+
+	private void renderGameBoard(String gameBoard) {
+		System.out.print(gameBoard);
 	}
 
 	public static void main(String[] args) {
 		TetrisGame tetris = new TetrisGame();
 		tetris.start();
+		System.out.println("game ended");
 	}
 
 }

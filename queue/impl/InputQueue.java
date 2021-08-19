@@ -38,7 +38,7 @@ public class InputQueue implements TetrisQueue {
 				try {
 					wait();
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					System.out.println("getting from queue is interrupted");
 				}
 			}
 

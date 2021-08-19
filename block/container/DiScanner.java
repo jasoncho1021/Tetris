@@ -17,6 +17,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import tetris.GameException;
+
 public class DiScanner {
 
 	public static List<Class<?>> scanPackageAndGetClass(Class<?> callerClass, Class<?> targetClass) {
@@ -30,9 +32,11 @@ public class DiScanner {
 		try {
 			classes = getClasses(packageName);
 
+			/*
 			if (classes.size() == 0) {
 				classes = getClassesFromJar(callerClass, packageName);
 			}
+			*/
 
 			for (Class<?> c : classes) {
 				Annotation[] annotations = c.getDeclaredAnnotations();
@@ -48,10 +52,8 @@ public class DiScanner {
 					}
 				}
 			}
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (ClassNotFoundException | IOException e) {
+			throw new GameException(e);
 		}
 
 		return targetAnnotatedClasses;
@@ -71,7 +73,7 @@ public class DiScanner {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		assert classLoader != null;
 		String path = packageName.replace('.', '/');
-		Enumeration resources = classLoader.getResources(path);
+		Enumeration<?> resources = classLoader.getResources(path);
 		List<File> dirs = new ArrayList<>();
 		while (resources.hasMoreElements()) {
 			URL resource = (URL) resources.nextElement();
@@ -133,7 +135,7 @@ public class DiScanner {
 			}
 
 		} catch (URISyntaxException | IOException | ClassNotFoundException e) {
-			e.printStackTrace();
+			throw new GameException(e);
 		}
 		return classes;
 	}

@@ -20,14 +20,16 @@ public class InputConsole extends TetrisProducer {
 
 	private void listenKey() {
 		try {
+			//startProduce(); // 차후 stopProduce() 먹힘.
 			setTerminalToCBreak();
-
-			startProduce();
-			while (isRunning()) {
-				if (System.in.available() != 0) {
-					tetrisQueue.add(new KeyInput((char) System.in.read()));
+			startProduce(); // 차후 stopProduce() 안 먹힘.
+			System.out.println("listenKey start:" + isRunning());
+			while (isRunning()) { // polling with non-blocking syscall
+				//System.out.println("suspend..");
+				if (System.in.available() != 0) { // non-blocking
+					tetrisQueue.add(new KeyInput((char) System.in.read())); // blocking
 				}
-			} // end while
+			} 
 		} catch (IOException e) {
 			System.err.println("IOException");
 		} catch (InterruptedException e) {
@@ -92,6 +94,7 @@ public class InputConsole extends TetrisProducer {
 	@Override
 	public void run() {
 		listenKey();
+		System.out.println("console end");
 	}
 
 }

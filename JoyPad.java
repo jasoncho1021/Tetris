@@ -1,7 +1,7 @@
 package tetris;
 
 public enum JoyPad {
-	DOWN('k'), LEFT('j'), RIGHT('l'), CLOCK_WISE_ROTATION('f'), ANTI_CLOCK_WISE_ROTATION('d'), QUIT('z');
+	DOWN('k'), LEFT('j'), RIGHT('l'), CLOCK_WISE_ROTATION('f'), ANTI_CLOCK_WISE_ROTATION('d'), QUIT('z'), UNDEFINED('\0');
 
 	private char key;
 
@@ -19,6 +19,6 @@ public enum JoyPad {
 				return joyPad;
 			}
 		}
-		return null;
+		return JoyPad.UNDEFINED;
 	}
 }

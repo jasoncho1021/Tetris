@@ -25,6 +25,7 @@ public class Producer extends TetrisProducer {
 				System.out.println("producer interrupted");
 			}
 		}
+		System.out.println("producer end");
 	}
 
 }
