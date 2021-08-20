@@ -54,19 +54,16 @@ public class TetrisGame {
 			e.printGameExceptionStack();
 		} finally {
 			inputConsole.stopProduce();
-			//consoleThread.interrupt();
+
 			producer.stopProduce();
 			producerThread.interrupt();
 
 			try {
-
-				System.out.println(inputConsole.isRunning());
 				consoleThread.join();
 				System.out.println("console join");
 
 				producerThread.join();
 				System.out.println("producer join");
-
 			} catch (InterruptedException ie) {
 				System.out.println("join interrupted");
 			}
@@ -128,28 +125,10 @@ public class TetrisGame {
 				break;
 			}
 		}
-
-		inputConsole.stopProduce();
-		producer.stopProduce();
-		producerThread.interrupt();
-
-		try {
-			consoleThread.join();
-			producerThread.join();
-		} catch (InterruptedException e) {
-			throw new GameException(e);
-		}
 	}
 
 	private void setNewBlock() {
-		try {
-			Thread.sleep(2000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		throw new GameException(new ArithmeticException());
-		//block = blockContainer.getNewBlock();
+		block = blockContainer.getNewBlock();
 	}
 
 	private void moveBlock(JoyPad joyPad) {

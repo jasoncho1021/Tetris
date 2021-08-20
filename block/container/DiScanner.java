@@ -22,7 +22,6 @@ import tetris.GameException;
 public class DiScanner {
 
 	public static List<Class<?>> scanPackageAndGetClass(Class<?> callerClass, Class<?> targetClass) {
-		//Class<?>[] classes;
 		List<Class<?>> classes;
 		List<Class<?>> targetAnnotatedClasses = new LinkedList<>();
 		String packageName = callerClass.getPackage().getName();
@@ -32,11 +31,9 @@ public class DiScanner {
 		try {
 			classes = getClasses(packageName);
 
-			/*
 			if (classes.size() == 0) {
 				classes = getClassesFromJar(callerClass, packageName);
 			}
-			*/
 
 			for (Class<?> c : classes) {
 				Annotation[] annotations = c.getDeclaredAnnotations();
