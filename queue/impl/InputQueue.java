@@ -34,7 +34,7 @@ public class InputQueue implements TetrisQueue {
 		KeyInput queueInput;
 		synchronized (this) {
 			// blocking
-			while (queue.isEmpty()) {
+			if (queue.isEmpty()) {
 				try {
 					wait();
 				} catch (InterruptedException e) {

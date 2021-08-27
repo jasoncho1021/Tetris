@@ -7,7 +7,7 @@ package tetris;
  * H = 3
  * W = 5
  * B = 1 // Bottom Border
- * S = 2 // Side Bordersf
+ * S = 2 // Side Borders
  * 
  *0		S  X  S
  *1		S  X  S
