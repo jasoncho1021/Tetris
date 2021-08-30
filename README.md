@@ -3,7 +3,7 @@
 
 ## 요구사항
 1. 생산자-소비자 큐 형태로 인풋 값 처리  
-1-1. thread 상태 조작을 통한(wait, notifyAll) blocking 구현  
+1-1. thread 상태 조작을 통한(wait, notifyAll) blocking queue 구현  
 
 2. 어노테이션 스캔으로 테트리스 블럭 모양 수집  
 2-1. Jar 파일 내에서도 스캔 가능하도록 FileSystem 처리  
