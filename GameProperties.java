@@ -29,6 +29,7 @@ public class GameProperties {
 
 	public static final int HIDDEN_START_HEIGHT = 2;
 	public static final int HEIGHT_PLUS_BOTTOM_BORDER = HEIGHT + BOTTOM_BORDER;
+	public static final int HEIGHT_PLUS_BOTTOM_BORDER_PLUS_INPUT = HEIGHT_PLUS_BOTTOM_BORDER + 1;
 	public static final int HEIGHT_PLUS_HIDDEN_START = HEIGHT + HIDDEN_START_HEIGHT;
 	public static final int HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER = HEIGHT_PLUS_HIDDEN_START + BOTTOM_BORDER;
 	public static final int WIDTH_PLUS_SIDE_BORDERS = WIDTH + SIDE_BORDERS;
