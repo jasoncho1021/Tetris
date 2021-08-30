@@ -1,6 +1,6 @@
 ![tetris2](https://user-images.githubusercontent.com/12610035/131299100-0bff9fd9-d7d6-4e7d-b3b4-5bfda6addf8f.gif)
 ## 요구사항
-1. 테트리스 블럭 모양 어노테이션 스캔으로 수집
+1. 어노테이션 스캔으로 테트리스 블럭 모양 수집
 
 2. 생산자-소비자 큐 형태로 인풋 값 처리
 2-1. thread 상태 조작을 통한(wait, notifyAll) blocking 구현  
