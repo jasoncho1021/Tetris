@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import tetris.block.BlockMovable;
+import tetris.block.BlockMovement;
 import tetris.block.container.BlockContainer;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
@@ -15,7 +15,6 @@ import tetris.queue.producer.impl.Producer;
 
 /**
  * ubuntu bash 창에서 play 가능합니다.
- * --> bash 옵션을 사용하여 화면에 출력된 문자열들을 덮어쓰거나 입력 키값을 엔터 없이 받는다. 
  * 
  * "multilineEraser.sh"
 	if [ $# -ne 1 ]; then
@@ -35,7 +34,7 @@ import tetris.queue.producer.impl.Producer;
 
 public class TetrisGame {
 
-	private BlockMovable block;
+	private BlockMovement block;
 	private BlockContainer blockContainer;
 	private TetrisQueue tetrisQueue;
 	private TetrisProducer inputConsole;
@@ -98,14 +97,17 @@ public class TetrisGame {
 	/**
 	 *  main.gameStart() == Consumer
 	 */
-	private void gameStart() {
+	private KeyInput keyInput;
 
-		renderGameBoard(setGameBoard());
+	private void gameStart() {
 
 		blockContainer = BlockContainer.getInstance();
 		setNewBlock();
 
-		KeyInput keyInput;
+		block.setBlockToMap(map);
+		keyInput = new KeyInput('x');
+		renderGameBoard(setGameBoard(BlockState.FALLING));
+
 		while (true) {
 			keyInput = new KeyInput();
 
@@ -128,7 +130,8 @@ public class TetrisGame {
 	}
 
 	private void setNewBlock() {
-		block = blockContainer.getNewBlock();
+		int idx = blockContainer.getNextBlockId();
+		block = blockContainer.getNewBlock(idx);
 	}
 
 	private void moveBlock(JoyPad joyPad) {
@@ -140,11 +143,12 @@ public class TetrisGame {
 
 		moveBlock(joyPad);
 
-		if (combineBlockToMap() == BlockState.TOUCH_CEIL) {
+		BlockState blockState = combineBlockToMap();
+		if (blockState == BlockState.TOUCH_CEIL) {
 			return false;
 		}
 
-		render();
+		render(blockState);
 
 		return true; // TOUCH_DOWN, FALLING
 	}
@@ -175,10 +179,10 @@ public class TetrisGame {
 		return blockState;
 	}
 
-	private void render() {
+	private void render(BlockState blockState) {
 		// 콘솔 화면 전체 삭제
-		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER));
-		renderGameBoard(setGameBoard());
+		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER_PLUS_INPUT));
+		renderGameBoard(setGameBoard(blockState));
 	}
 
 	private void removePreviousFallingBlockFromMap() {
@@ -201,7 +205,7 @@ public class TetrisGame {
 		}
 	}
 
-	private String setGameBoard() {
+	private String setGameBoard(BlockState blockState) {
 		StringBuilder sb = new StringBuilder();
 		int lineNum = 1;
 		for (int row = GameProperties.HIDDEN_START_HEIGHT; row < GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER; row++) {
@@ -227,6 +231,13 @@ public class TetrisGame {
 			if (lineNum == 0) {
 				lineNum++;
 			}
+		}
+		sb.append(keyInput.joyPad);
+		sb.append("\n");
+
+		// set futureBlock
+		if (blockState == BlockState.FALLING) {
+			block.setFutureBlockToStringBuilder(map, sb);
 		}
 		return sb.toString();
 	}
