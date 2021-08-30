@@ -29,12 +29,19 @@ public class BlockContainer {
 		clazzList = DiScanner.scanPackageAndGetClass(clazz, TetrisBlock.class);
 	}
 
-	public Block getNewBlock() {
+	public int getNextBlockId() {
 		try {
-			int idx = random.nextInt(clazzList.size());
+			return random.nextInt(clazzList.size());
+		} catch (IllegalArgumentException ie) {
+			throw new GameException(ie);
+		}
+	}
+
+	public Block getNewBlock(int idx) {
+		try {
 			Class<?> c = clazzList.get(idx);
 			return (Block) c.newInstance();
-		} catch (RuntimeException | InstantiationException | IllegalAccessException e) {
+		} catch (InstantiationException | IllegalAccessException e) {
 			throw new GameException(e);
 		}
 	}

@@ -1,10 +1,12 @@
 package tetris.block;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import tetris.GameProperties;
 import tetris.JoyPad;
 
-public abstract class Block implements BlockMovable {
-
+public abstract class Block implements BlockMovement {
 	/* 
 	 * default setting 3 X 3
 	 * 1) +
@@ -117,6 +119,7 @@ public abstract class Block implements BlockMovable {
 		}
 	}
 
+	// 방금 초기화된 블럭인지 확인하기 위해, y축 값 확인 
 	private boolean isTop() {
 		if (y == 0) {
 			return true;
@@ -150,7 +153,7 @@ public abstract class Block implements BlockMovable {
 		}
 	}
 
-	protected boolean isPossibleToRotate(final boolean[][] map) {
+	private boolean isPossibleToRotate(final boolean[][] map) {
 		int cx, cy;
 		int[][] mask = getMask();
 		if (isOverlapped(x, y, map)) {
@@ -219,6 +222,107 @@ public abstract class Block implements BlockMovable {
 			}
 		}
 		return true;
+	}
+
+	static class Pos {
+		int x, y;
+
+		Pos(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + x;
+			result = prime * result + y;
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Pos other = (Pos) obj;
+			if (x != other.x)
+				return false;
+			if (y != other.y)
+				return false;
+			return true;
+		}
+
+	}
+
+	@Override
+	public void setFutureBlockToStringBuilder(final boolean map[][], StringBuilder sb) {
+		List<Pos> blockPosList = new LinkedList<Pos>();
+		int nx, ny;
+		for (int row = 0; row < shapeSize; row++) {
+			for (int col = 0; col < shapeSize; col++) {
+				if (blockShape[row][col]) {
+					ny = y + (row - 1);
+					nx = x + (col - 1);
+					if (map[ny][nx]) {
+						blockPosList.add(new Pos(nx, ny));
+					}
+				}
+			}
+		}
+
+		int fy = y;
+
+		loop: while (true) {
+			fy++;
+			for (int row = 0; row < shapeSize; row++) {
+				for (int col = 0; col < shapeSize; col++) {
+					/**
+					 * y 	[ |   ]
+					 * by	[ v ^ ]  ny
+					 *  	[   | ]  fy
+					 
+					 *    a a
+					 *  a x b    b b
+					 *  b b    b b
+					 */
+					if (blockShape[row][col]) {
+						ny = fy + (row - 1);
+						nx = x + (col - 1);
+
+						if (!blockPosList.contains(new Pos(nx, ny))) {
+							if (map[ny][nx]) { // original 블럭이 아닌 아래 쪽 쌓인 블럭 또는 바닥과 충돌 했을 때
+								break loop;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		fy--;// 충돌 나지 않은 지점이였던 한 칸 위로
+
+		int idx;
+		for (int row = 0; row < shapeSize; row++) {
+			for (int col = 0; col < shapeSize; col++) {
+				if (blockShape[row][col]) {
+					nx = x + (col - 1);
+					ny = fy + (row - 1);
+
+					if (blockPosList.contains(new Pos(nx, ny))) {
+						continue;
+					}
+
+					idx = (ny * (GameProperties.WIDTH_PLUS_SIDE_BORDERS + 1)) + (nx)
+							- (2 * (GameProperties.WIDTH_PLUS_SIDE_BORDERS + 1));
+					sb.setCharAt(idx, '*');
+				}
+			}
+		}
 	}
 
 	@Override
