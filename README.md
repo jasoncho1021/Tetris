@@ -1,4 +1,6 @@
-![tetris2](https://user-images.githubusercontent.com/12610035/131299100-0bff9fd9-d7d6-4e7d-b3b4-5bfda6addf8f.gif)
+![tetris2](https://user-images.githubusercontent.com/12610035/131299100-0bff9fd9-d7d6-4e7d-b3b4-5bfda6addf8f.gif)  
+* 회전시 벽이나 쌓여 있는 블럭 통과 안 하고 회전축 밀리도록 구현  
+
 ## 요구사항
 1. 생산자-소비자 큐 형태로 인풋 값 처리  
 1-1. thread 상태 조작을 통한(wait, notifyAll) blocking 구현  
