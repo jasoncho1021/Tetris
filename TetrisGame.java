@@ -98,15 +98,17 @@ public class TetrisGame {
 	/**
 	 *  main.gameStart() == Consumer
 	 */
+	private KeyInput keyInput;
+
 	private void gameStart() {
 
 		blockContainer = BlockContainer.getInstance();
 		setNewBlock();
-		block.setBlockToMap(map);
 
+		block.setBlockToMap(map);
+		keyInput = new KeyInput('x');
 		renderGameBoard(setGameBoard(BlockState.FALLING));
 
-		KeyInput keyInput;
 		while (true) {
 			keyInput = new KeyInput();
 
@@ -180,7 +182,7 @@ public class TetrisGame {
 
 	private void render(BlockState blockState) {
 		// 콘솔 화면 전체 삭제
-		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER));
+		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER_PLUS_INPUT));
 		renderGameBoard(setGameBoard(blockState));
 	}
 
@@ -231,6 +233,8 @@ public class TetrisGame {
 				lineNum++;
 			}
 		}
+		sb.append(keyInput.joyPad);
+		sb.append("\n");
 
 		// set futureBlock
 		if (blockState == BlockState.FALLING) {
