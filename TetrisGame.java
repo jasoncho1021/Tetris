@@ -285,7 +285,7 @@ public class TetrisGame {
 		/*
 		 * dir
 		 * 1. eclipse : project/
-		 * 2. cosole : project/bin
+		 * 2. console : project/bin
 		 */
 		String dir = System.getProperty("user.dir");
 		String path = dir + "/multilineEraser.sh";
