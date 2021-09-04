@@ -44,7 +44,7 @@ public class TetrisGame {
 
 	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 
-	private void start() {
+	public void start() {
 		try {
 			initBorder();
 			initInputListener();
@@ -63,9 +63,12 @@ public class TetrisGame {
 
 				producerThread.join();
 				System.out.println("producer join");
+
+				System.out.println("game ended");
 			} catch (InterruptedException ie) {
 				System.out.println("join interrupted");
 			}
+
 		}
 	}
 
@@ -315,7 +318,6 @@ public class TetrisGame {
 	public static void main(String[] args) {
 		TetrisGame tetris = new TetrisGame();
 		tetris.start();
-		System.out.println("game ended");
 	}
 
 }

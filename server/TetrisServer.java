@@ -14,7 +14,6 @@ import java.util.Set;
 public class TetrisServer {
 
 	public static void main(String[] args) {
-		Set<SocketChannel> allClient = new HashSet<>();
 
 		try (ServerSocketChannel serverSocket = ServerSocketChannel.open()) {
 
@@ -26,9 +25,13 @@ public class TetrisServer {
 
 			System.out.println("---- Ready to access to the Server ----");
 
+			Set<SocketChannel> allClient = new HashSet<>();
+			Set<Integer> readyClientID = new HashSet<>();
+
 			ByteBuffer inputBuf = ByteBuffer.allocate(1024);
 			ByteBuffer outputBuf = ByteBuffer.allocate(1024);
 
+			Integer autoIncrementIdx = 0;
 			while (true) {
 				selector.select();
 
@@ -46,9 +49,14 @@ public class TetrisServer {
 
 						allClient.add(clientSocket);
 
-						clientSocket.write(ByteBuffer.wrap("Fill in ID: ".getBytes()));
+						clientSocket
+								.write(ByteBuffer.wrap("press the 'r' key to prepare to start the game.\n".getBytes()));
 
-						clientSocket.register(selector, SelectionKey.OP_READ, new ClientInfo());
+						ClientInfo clientInfo = new ClientInfo(autoIncrementIdx++);
+						System.out.println("connected clientId:" + clientInfo.getID());
+
+						clientSocket.register(selector, SelectionKey.OP_READ, clientInfo);
+
 					} else if (key.isReadable()) {
 
 						SocketChannel readSocket = (SocketChannel) key.channel();
@@ -60,7 +68,7 @@ public class TetrisServer {
 							key.cancel();
 							allClient.remove(readSocket);
 
-							String end = info.getID() + "'s connection is finished\n";
+							String end = info.getID() + "'s connection is finished by EXCEPTION\n";
 							System.out.print(end);
 
 							outputBuf.put(end.getBytes());
@@ -74,73 +82,85 @@ public class TetrisServer {
 							continue;
 						}
 
-						if (info.isID()) {
-							inputBuf.limit(inputBuf.position() - 2);
-							inputBuf.position(0);
-							byte[] b = new byte[inputBuf.limit()];
-							inputBuf.get(b);
-							info.setID(new String(b));
-
-							String enter = info.getID() + " is entered \n";
+						// r 키 하나만 있는지 확인.
+						if (isReady(inputBuf)) {
+							String enter = info.getID() + " is ready \n";
 							System.out.print(enter);
-
-							outputBuf.put(enter.getBytes());
-
-							for (SocketChannel s : allClient) {
-								outputBuf.flip();
-								s.write(outputBuf);
-							}
-
 							inputBuf.clear();
-							outputBuf.clear();
+
+							readyClientID.add(info.getID());
+							if (readyClientID.size() == allClient.size()) {
+								outputBuf.put("START@".getBytes());
+
+								// 모든 클라이언트에게 메세지 출력
+								for (SocketChannel s : allClient) {
+									outputBuf.flip();
+									s.write(outputBuf);
+								}
+								outputBuf.clear();
+							}
 							continue;
 						}
-						
-						inputBuf.flip();
+
+						// talk
+						inputBuf.flip(); // enter 제거 없이 바로 전송.
 						outputBuf.put((info.getID() + " : ").getBytes());
 						outputBuf.put(inputBuf);
 						outputBuf.flip();
-						
-						
-						for(SocketChannel s : allClient) {
-							if(!readSocket.equals(s)) {
+
+						for (SocketChannel s : allClient) {
+							if (!readSocket.equals(s)) {
 								s.write(outputBuf);
 								outputBuf.flip();
 							}
 						}
-						
+
 						inputBuf.clear();
 						outputBuf.clear();
 					}
 				}
 			}
-		} catch ( IOException e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
+	}
+
+	public static boolean isReady(ByteBuffer original) {
+		int originPos = original.position();
+		int originLimit = original.limit();
+
+		System.out.println("P:" + originPos);
+		System.out.println("L:" + originLimit);
+
+		if (originPos > 0) {
+			original.limit(originPos - 1); // remove enter key;
+		}
+		original.position(0);
+		byte[] b = new byte[original.limit()];
+		original.get(b);
+		String pressedKey = new String(b);
+
+		if ("r".equalsIgnoreCase(pressedKey)) {
+			return true;
+		}
+
+		original.limit(originLimit);
+		original.position(originPos);
+		return false;
 	}
 
 }
 
 class ClientInfo {
 
-	private boolean idCheck = true;
-	private String id;
+	private Integer id;
 
-	boolean isID() {
-		return idCheck;
-	}
-
-	private void setCheck() {
-		idCheck = false;
-	}
-
-	String getID() {
-		return id;
-	}
-
-	void setID(String id) {
+	public ClientInfo(Integer id) {
 		this.id = id;
-		setCheck();
+	}
+
+	public Integer getID() {
+		return this.id;
 	}
 }
