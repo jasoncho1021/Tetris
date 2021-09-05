@@ -1,28 +1,27 @@
-package tetris.queue.impl;
+package tetris.jobqueue;
 
 import java.util.LinkedList;
 import java.util.Queue;
 
-import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
 
-public class InputQueue implements TetrisQueue<KeyInput> {
-	private Queue<KeyInput> queue;
+public class JobQueue implements TetrisQueue<JobInput> {
+	private Queue<JobInput> queue;
 
-	private InputQueue() {
-		queue = new LinkedList<KeyInput>();
+	private JobQueue() {
+		queue = new LinkedList<JobInput>();
 	}
 
-	public static TetrisQueue<KeyInput> getInstance() {
+	public static TetrisQueue<JobInput> getInstance() {
 		return LazyHolder.INSTANCE;
 	}
 
 	private static class LazyHolder {
-		private static final TetrisQueue<KeyInput> INSTANCE = new InputQueue();
+		private static final TetrisQueue<JobInput> INSTANCE = new JobQueue();
 	}
 
 	@Override
-	public void add(KeyInput input) {
+	public void add(JobInput input) {
 		synchronized (this) {
 			queue.offer(input);
 			notifyAll();
@@ -30,8 +29,8 @@ public class InputQueue implements TetrisQueue<KeyInput> {
 	}
 
 	@Override
-	public void get(KeyInput keyOutput) {
-		KeyInput queueInput;
+	public void get(JobInput output) {
+		JobInput queueInput;
 		synchronized (this) {
 			// blocking
 			if (queue.isEmpty()) {
@@ -43,7 +42,7 @@ public class InputQueue implements TetrisQueue<KeyInput> {
 			}
 
 			queueInput = queue.poll();
-			keyOutput.setItem(queueInput.getItem());
+			output.setItem(queueInput.getItem());
 			notifyAll();
 		}
 	}

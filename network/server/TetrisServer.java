@@ -1,4 +1,4 @@
-package tetris.server;
+package tetris.network.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

@@ -1,4 +1,4 @@
-package tetris.client;
+package tetris.network.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -25,21 +25,31 @@ public class Client {
 			ByteBuffer buf = ByteBuffer.allocate(1024);
 			WritableByteChannel out = Channels.newChannel(System.out);
 
+			boolean isGameStarted = false;
+			TetrisGame tetris;
 			while (true) {
+				if (socket.isBlocking()) {
+					System.out.println("yes blocked");
+				}
 				socket.read(buf);
+				System.out.println("vvvvvvvv");
 
 				if (isGameStartCommand(buf)) {
 					systemIn.stopSend();
-					TetrisGame tetris = new TetrisGame();
-					tetris.start();
-
 					buf.clear();
+					isGameStarted = true;
+					tetris = new TetrisGame(); // new TetrisGame(socket)
+					tetris.start();
 					continue;
 				}
 
-				buf.flip();
-				out.write(buf);
-				buf.clear();
+				if (!isGameStarted) {
+					buf.flip();
+					out.write(buf);
+					buf.clear();
+				} else {
+					//tetris
+				}
 			}
 		} catch (IOException e) {
 			System.out.println("IOException: connection is finished");
@@ -73,24 +83,27 @@ public class Client {
 }
 
 class SystemIn implements Runnable {
-	SocketChannel socket;
+	private SocketChannel socket;
 
 	SystemIn(SocketChannel socket) {
 		this.socket = socket;
 	}
 
-	boolean flag = true;
+	private boolean flag = true;
 
-	void stopSend() {
+	public void startSend() {
+		flag = true;
+	}
+
+	public void stopSend() {
 		flag = false;
 	}
 
-	boolean isRunning() {
+	private boolean isRunning() {
 		return flag;
 	}
 
-	@Override
-	public void run() {
+	private void chattingSending() {
 		ReadableByteChannel in = Channels.newChannel(System.in);
 		ByteBuffer buf = ByteBuffer.allocate(1024);
 
@@ -107,5 +120,28 @@ class SystemIn implements Runnable {
 		} catch (IOException e) {
 			System.out.println("IOException: chatting is impossible");
 		}
+	}
+
+	private void attackSending() {
+		ByteBuffer buf = ByteBuffer.allocate(1024);
+
+		startSend();
+		try {
+			while (isRunning()) {
+				buf.put("ATTACK".getBytes());
+				buf.flip();
+				socket.write(buf);
+				buf.clear();
+			}
+			System.out.println("send stoped");
+		} catch (IOException e) {
+			System.out.println("IOException: chatting is impossible");
+		}
+	}
+
+	@Override
+	public void run() {
+		chattingSending();
+		attackSending();
 	}
 }

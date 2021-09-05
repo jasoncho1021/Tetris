@@ -1,7 +1,7 @@
 package tetris.queue;
 
-public interface TetrisQueue {
-	public void add(KeyInput keyInput);
+public interface TetrisQueue<K> {
+	public void add(K input);
 
-	public void get(KeyInput keyOutput);
+	public void get(K output);
 }

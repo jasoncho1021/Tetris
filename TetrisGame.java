@@ -5,11 +5,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 import tetris.block.BlockMovement;
+import tetris.block.BlockState;
 import tetris.block.container.BlockContainer;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
 import tetris.queue.impl.InputQueue;
-import tetris.queue.producer.TetrisProducer;
+import tetris.queue.producer.TetrisThread;
 import tetris.queue.producer.impl.InputConsole;
 import tetris.queue.producer.impl.Producer;
 
@@ -36,9 +37,9 @@ public class TetrisGame {
 
 	private BlockMovement block;
 	private BlockContainer blockContainer;
-	private TetrisQueue tetrisQueue;
-	private TetrisProducer inputConsole;
-	private TetrisProducer producer;
+	private TetrisQueue<KeyInput> tetrisQueue;
+	private TetrisThread inputConsole;
+	private TetrisThread producer;
 	private Thread consoleThread;
 	private Thread producerThread;
 
@@ -52,9 +53,9 @@ public class TetrisGame {
 		} catch (GameException e) {
 			e.printGameExceptionStack();
 		} finally {
-			inputConsole.stopProduce();
+			inputConsole.stopRunning();
 
-			producer.stopProduce();
+			producer.stopRunning();
 			producerThread.interrupt();
 
 			try {
@@ -118,15 +119,15 @@ public class TetrisGame {
 			// blocking if queue is empty
 			tetrisQueue.get(keyInput);
 
-			if (keyInput.joyPad == JoyPad.UNDEFINED) {
+			if (keyInput.getItem() == JoyPad.UNDEFINED) {
 				continue;
 			}
 
-			if (keyInput.joyPad == JoyPad.QUIT) {
+			if (keyInput.getItem() == JoyPad.QUIT) {
 				break;
 			}
 
-			if (!moveBlockAndRender(keyInput.joyPad)) {
+			if (!moveBlockAndRender(keyInput.getItem())) {
 				break;
 			}
 		}
@@ -235,7 +236,7 @@ public class TetrisGame {
 				lineNum++;
 			}
 		}
-		sb.append(keyInput.joyPad);
+		sb.append(keyInput.getItem());
 		sb.append("\n");
 
 		// set futureBlock

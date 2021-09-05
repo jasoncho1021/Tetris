@@ -6,9 +6,9 @@ import java.io.InputStream;
 
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
-import tetris.queue.producer.TetrisProducer;
+import tetris.queue.producer.TetrisThread;
 
-public class InputConsole extends TetrisProducer {
+public class InputConsole extends TetrisThread {
 
 	private String ttyConfig;
 
@@ -90,7 +90,7 @@ public class InputConsole extends TetrisProducer {
 
 	@Override
 	public void run() {
-		startProduce();
+		startRunning();
 		listenKey();
 		System.out.println("console end");
 	}

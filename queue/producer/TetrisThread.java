@@ -1,13 +1,13 @@
 package tetris.queue.producer;
 
-public abstract class TetrisProducer implements Runnable {
+public abstract class TetrisThread implements Runnable {
 	private boolean isRunning;
 
-	public void startProduce() {
+	public void startRunning() {
 		this.isRunning = true;
 	}
 
-	public void stopProduce() {
+	public void stopRunning() {
 		this.isRunning = false;
 	}
 
