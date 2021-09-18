@@ -107,6 +107,30 @@ public class TetrisRenderImpl implements TetrisRender {
 		}
 	}
 
+	public void addLine() {
+		removePreviousFallingBlockFromMap();
+
+		boolean tempRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];
+		boolean bufRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];
+
+		for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+			bufRow[col] = true;
+		}
+		// add
+		for (int row = GameProperties.HEIGHT_PLUS_HIDDEN_START; row >= 0; row--) {
+			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+				tempRow[col] = map[row][col];
+			}
+
+			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+				map[row][col] = bufRow[col];
+				bufRow[col] = tempRow[col];
+			}
+		}
+
+		moveBlockAndRender(JoyPad.LEFT); // producer 에서 sleep 이후에 넣으면 InputReceiver 쪽 로직에서 종료시킬 것임.
+	}
+
 	public boolean moveBlockAndRender(JoyPad joyPad) {
 		moveBlock(joyPad);
 
@@ -330,6 +354,11 @@ public class TetrisRenderImpl implements TetrisRender {
 	public static void main(String[] args) {
 		TetrisRenderImpl tetrisGameImpl = new TetrisRenderImpl();
 		tetrisGameImpl.gameStart();
+	}
+
+	@Override
+	public void run() {
+		gameStart();
 	}
 
 }

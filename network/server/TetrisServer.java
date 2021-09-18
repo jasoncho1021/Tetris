@@ -95,24 +95,24 @@ public class TetrisServer {
 							System.out.print(enter);
 							inputBuf.clear();
 
-							outputBuf.put("START@".getBytes());
-							outputBuf.flip();
-							readSocket.write(outputBuf);
-							outputBuf.clear();
+							/*							outputBuf.put("START@".getBytes());
+														outputBuf.flip();
+														readSocket.write(outputBuf);
+														outputBuf.clear();
+							*/
+							readyClientID.add(info.getID());
+							if (readyClientID.size() == allClient.size()) {
+								outputBuf.put("START@".getBytes());
 
-							/*							readyClientID.add(info.getID());
-														if (readyClientID.size() == allClient.size()) {
-															outputBuf.put("START@".getBytes());
-							
-															// 모든 클라이언트에게 메세지 출력
-															for (SocketChannel s : allClient) {
-																outputBuf.flip();
-																s.write(outputBuf);
-															}
-															outputBuf.clear();
-														}*/
+								// 모든 클라이언트에게 메세지 출력
+								for (SocketChannel s : allClient) {
+									outputBuf.flip();
+									s.write(outputBuf);
+								}
+								outputBuf.clear();
+							}
 							continue;
-						} else if("ATTAC".equalsIgnoreCase(requestString)) {
+						} else if ("ATTAC".equalsIgnoreCase(requestString)) {
 							// talk
 							System.out.println(requestString + "/" + requestString.length());
 							outputBuf.put("ATTACK".getBytes());

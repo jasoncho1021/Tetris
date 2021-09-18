@@ -9,9 +9,8 @@ import java.nio.channels.WritableByteChannel;
 
 import tetris.JobCallBack;
 import tetris.TetrisRender;
-import tetris.TetrisRenderImpl;
 
-public class Client {
+public class ClientDummy {
 
 	private static final String START = "START";
 	public static final String ATTACK = "ATTACK";
@@ -41,10 +40,9 @@ public class Client {
 
 				if (isGameStarted) { // ATTACK
 					content = getRequestString(buf, 0);
-					buf.clear();
+					System.out.println(content + "//" + content.length());
 				} else { // ATTAC
 					content = getRequestString(buf, 1); // '\n' 제거
-					buf.clear();
 					System.out.println(content + "/" + content.length());
 				}
 
@@ -52,6 +50,7 @@ public class Client {
 					//systemInThread.interrupt();
 					systemIn.stopSend();
 
+					buf.clear();
 					isGameStarted = true;
 
 					/*	Thread attackThread = new Thread() {
@@ -73,11 +72,16 @@ public class Client {
 					*/
 					//tetris = new TetrisRenderImpl(new AttackSender(socket));
 
-					tetris = new TetrisRenderImpl(systemIn);
+					//tetris = new TetrisRenderImpl(systemIn);
+					//tetris.gameStart();
+
+					tetris = new DummyJobQueue();
 					Thread tetrisThread = new Thread(tetris);
 					tetrisThread.start();
 					continue;
 				} else if (ATTACK.equalsIgnoreCase(content)) {
+					buf.clear();
+					System.out.println("herer");
 
 					tetris.addJob(new JobCallBack() {
 						@Override
@@ -87,6 +91,11 @@ public class Client {
 					});
 					continue;
 				}
+
+				/*if (!isGameStarted) {
+					buf.flip();
+					out.write(buf);
+				}*/
 
 				buf.flip();
 				out.write(buf);
@@ -116,7 +125,7 @@ public class Client {
 	}
 
 	public static void main(String[] args) {
-		Client client = new Client();
+		ClientDummy client = new ClientDummy();
 		client.startClient();
 	}
 }
