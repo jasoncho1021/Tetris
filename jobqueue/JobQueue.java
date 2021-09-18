@@ -33,7 +33,7 @@ public class JobQueue implements TetrisQueue<JobInput> {
 		JobInput queueInput;
 		synchronized (this) {
 			// blocking
-			if (queue.isEmpty()) {
+			while (queue.isEmpty()) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
@@ -43,7 +43,7 @@ public class JobQueue implements TetrisQueue<JobInput> {
 
 			queueInput = queue.poll();
 			output.setItem(queueInput.getItem());
-			notifyAll();
+			//notifyAll();
 		}
 	}
 

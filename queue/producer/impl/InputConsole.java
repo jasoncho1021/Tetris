@@ -12,9 +12,9 @@ public class InputConsole extends TetrisThread {
 
 	private String ttyConfig;
 
-	private TetrisQueue tetrisQueue;
+	private TetrisQueue<KeyInput> tetrisQueue;
 
-	public InputConsole(TetrisQueue tetrisQueue) {
+	public InputConsole(TetrisQueue<KeyInput> tetrisQueue) {
 		this.tetrisQueue = tetrisQueue;
 	}
 

@@ -1,17 +1,17 @@
 package tetris.queue.producer;
 
 public abstract class TetrisThread implements Runnable {
-	private boolean isRunning;
+	private volatile boolean isRunning;
 
-	public void startRunning() {
+	public synchronized void startRunning() {
 		this.isRunning = true;
 	}
 
-	public void stopRunning() {
+	public synchronized void stopRunning() {
 		this.isRunning = false;
 	}
 
-	public boolean isRunning() {
+	public synchronized boolean isRunning() {
 		return isRunning;
 	}
 }

@@ -4,8 +4,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import tetris.block.BlockMovement;
+import tetris.block.BlockState;
+import tetris.block.container.BlockContainer;
 import tetris.jobqueue.JobInput;
 import tetris.jobqueue.JobQueue;
+import tetris.network.client.SystemIn;
+import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
 import tetris.receiver.InputReceiver;
 
@@ -31,41 +36,62 @@ import tetris.receiver.InputReceiver;
 public class TetrisRenderImpl implements TetrisRender {
 
 	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
+	private BlockMovement block;
+	private BlockContainer blockContainer;
 
 	private TetrisQueue<JobInput> jobQueue = JobQueue.getInstance();
 
 	public void gameStart() {
-		initBorder();
-
-		InputReceiver inputReceiver = new InputReceiver(this);
-		inputReceiver.startRunning();
-
-		Thread inputReceiverThread = new Thread(inputReceiver);
-
-		inputReceiverThread.start();
-
-		JobInput jobInput;
-		while (inputReceiver.isRunning()) {
-			jobInput = new JobInput();
-			jobQueue.get(jobInput);
-			doJobCallBack(jobInput.getItem());
-		}
-
+		InputReceiver inputReceiver;
+		Thread inputReceiverThread = null;
 		try {
-			inputReceiverThread.join();
-			System.out.println("inputReceiver join");
-		} catch (InterruptedException e) {
-			System.out.println("inputReceiver join interrupted");
+			blockContainer = BlockContainer.getInstance();
+			setNewBlock();
+
+			initBorder();
+
+			// before producer thread add keyInput in inputReceiverThread
+			addJob(new JobCallBack() {
+				@Override
+				public void doJob() {
+					block.setBlockToMap(map);
+					KeyInput keyInput = new KeyInput('x');
+					render(BlockState.FALLING, keyInput.getItem());
+				}
+			});
+
+			inputReceiver = new InputReceiver(this);
+			inputReceiverThread = new Thread(inputReceiver);
+			inputReceiverThread.start();
+
+			JobInput jobInput;
+			while (inputReceiver.isRunning()) {
+				jobInput = new JobInput();
+				jobQueue.get(jobInput); // blocking,,until inputReceiver addJob or Attack addJob
+				doJobCallBack(jobInput.getItem());
+			}
+
+		} catch (GameException e) {
+			e.printGameExceptionStack();
+		} finally {
+			try {
+				if (inputReceiverThread != null) {
+					inputReceiverThread.join();
+					System.out.println("inputReceiver join");
+				}
+			} catch (InterruptedException e) {
+				System.out.println("inputReceiver join interrupted");
+			}
 		}
+
 	}
 
-	@Override
 	public void addJob(JobCallBack jobCallBack) {
 		jobQueue.add(new JobInput(jobCallBack));
 	}
 
 	private void doJobCallBack(JobCallBack jobCallBack) {
-		jobCallBack.doJob(map);
+		jobCallBack.doJob();
 	}
 
 	private void initBorder() {
@@ -81,6 +107,89 @@ public class TetrisRenderImpl implements TetrisRender {
 		}
 	}
 
+	public boolean moveBlockAndRender(JoyPad joyPad) {
+		moveBlock(joyPad);
+
+		BlockState blockState = combineBlockToMap();
+		if (blockState == BlockState.TOUCH_CEIL) {
+			return false;
+		}
+
+		renderErased();
+		render(blockState, joyPad);
+
+		return true; // TOUCH_DOWN, FALLING
+	}
+
+	private void moveBlock(JoyPad joyPad) {
+		removePreviousFallingBlockFromMap();
+		block.doKeyEvent(joyPad, map);
+	}
+
+	private void removePreviousFallingBlockFromMap() {
+		block.remove(map);
+	}
+
+	private BlockState combineBlockToMap() {
+		/*
+		 * moveBlock -> 안 겹치면 이동 및 회전, 겹치면 안 겹쳤던 직전 상태 유지. 
+		 * isTouchDown -> isPossibleToPut -> 겹치는 여부 확인. 
+		 */
+		BlockState blockState;
+
+		if (isTouchDown()) {
+			if (block.isCeil()) {
+				return BlockState.TOUCH_CEIL;
+			}
+
+			blockState = BlockState.TOUCH_DOWN;
+			block.setBlockToMap(map);
+
+			removePerfectLine();
+			setNewBlock();
+		} else {
+			// FALLING
+			blockState = BlockState.FALLING;
+			block.setBlockToMap(map);
+		}
+
+		return blockState;
+	}
+
+	private boolean isTouchDown() {
+		// 방향 회전 또는 이동 ==>  블럭 중심 좌표 변경
+
+		/*
+		 * rerender 함수 첫 줄에서 block 이동시킨 모양이
+		 * 바닥 경계와 겹치거나 이미 쌓여 있는 블럭과 겹치는지 확인 후
+		 * 복구 또는 계속 진행
+		 */
+		if (block.isPossibleToPut(map)) {
+			return false;
+		} else {
+			block.recoverY();
+			return true;
+		}
+	}
+
+	private void setNewBlock() {
+		int idx = blockContainer.getNextBlockId();
+		block = blockContainer.getNewBlock(idx);
+	}
+
+	private void render(BlockState blockState, JoyPad joyPad) {
+		StringBuilder sb = setGameBoard();
+		sb.append(joyPad);
+		sb.append("\n");
+
+		// set futureBlock
+		if (blockState == BlockState.FALLING) {
+			block.setFutureBlockToStringBuilder(map, sb);
+		}
+
+		renderGameBoard(sb.toString());
+	}
+
 	public void renderErased() {
 		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER_PLUS_INPUT));
 	}
@@ -90,7 +199,7 @@ public class TetrisRenderImpl implements TetrisRender {
 		int lineNum = 1;
 		for (int row = GameProperties.HIDDEN_START_HEIGHT; row < GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER; row++) {
 			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
-				if (col == 0 || col > GameProperties.WIDTH) {
+				if (col == 0 || col > GameProperties.WIDTH) { // side line
 					if (row == GameProperties.HEIGHT_PLUS_HIDDEN_START) {
 						sb.append(" ");
 					} else {
@@ -121,6 +230,8 @@ public class TetrisRenderImpl implements TetrisRender {
 
 		int blockCount;
 		int tempRow = GameProperties.HEIGHT_PLUS_HIDDEN_START;
+		int num = 0;
+
 		for (int row = GameProperties.HEIGHT_PLUS_HIDDEN_START; row >= 0; row--) {
 			blockCount = 0;
 			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
@@ -132,12 +243,18 @@ public class TetrisRenderImpl implements TetrisRender {
 			// 완벽한 줄들 건너 뜀 == (삭제)
 			// 완벽하지 못 한 줄들 땡김.
 			// 외벽 포함해서(true) 통째로 카운트
-			if (tempRow == (GameProperties.HEIGHT_PLUS_HIDDEN_START)
-					|| blockCount < GameProperties.WIDTH_PLUS_SIDE_BORDERS) {
+			if (tempRow == (GameProperties.HEIGHT_PLUS_HIDDEN_START)) {
 				for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 					tempMap[tempRow][col] = map[row][col];
 				}
 				tempRow--;
+			} else if (blockCount < GameProperties.WIDTH_PLUS_SIDE_BORDERS) {
+				for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+					tempMap[tempRow][col] = map[row][col];
+				}
+				tempRow--;
+			} else {
+				num++;
 			}
 		}
 
@@ -152,6 +269,13 @@ public class TetrisRenderImpl implements TetrisRender {
 			map[tempRow][0] = true;
 			map[tempRow][(GameProperties.WIDTH_PLUS_SIDE_BORDERS - 1)] = true;
 			tempRow--;
+		}
+
+		if (num > 0) {
+			//attackThread = new Thread(attackSender);
+			//attackThread.run();
+
+			systemIn.setAttackSending();
 		}
 	}
 
@@ -184,6 +308,23 @@ public class TetrisRenderImpl implements TetrisRender {
 
 	public void renderGameBoard(String gameBoard) {
 		System.out.print(gameBoard);
+	}
+
+	/*
+	private AttackSender attackSender;
+	private Thread attackThread;
+	public TetrisRenderImpl(AttackSender attackSender) {
+		this.attackSender = attackSender;
+	}
+	*/
+
+	private SystemIn systemIn;
+
+	public TetrisRenderImpl(SystemIn systemIn) {
+		this.systemIn = systemIn;
+	}
+
+	public TetrisRenderImpl() {
 	}
 
 	public static void main(String[] args) {

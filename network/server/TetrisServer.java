@@ -13,6 +13,8 @@ import java.util.Set;
 
 public class TetrisServer {
 
+	private static final String READY = "r";
+
 	public static void main(String[] args) {
 
 		try (ServerSocketChannel serverSocket = ServerSocketChannel.open()) {
@@ -62,6 +64,8 @@ public class TetrisServer {
 						SocketChannel readSocket = (SocketChannel) key.channel();
 						ClientInfo info = (ClientInfo) key.attachment();
 
+						System.out.println("------------");
+
 						try {
 							readSocket.read(inputBuf);
 						} catch (Exception e) {
@@ -83,22 +87,46 @@ public class TetrisServer {
 						}
 
 						// r 키 하나만 있는지 확인.
-						if (isReady(inputBuf)) {
+						String requestString = getRequestString(inputBuf);
+						System.out.println(info.getID() + ":" + requestString);
+
+						if (READY.equalsIgnoreCase(requestString)) {
 							String enter = info.getID() + " is ready \n";
 							System.out.print(enter);
 							inputBuf.clear();
 
-							readyClientID.add(info.getID());
-							if (readyClientID.size() == allClient.size()) {
-								outputBuf.put("START@".getBytes());
+							outputBuf.put("START@".getBytes());
+							outputBuf.flip();
+							readSocket.write(outputBuf);
+							outputBuf.clear();
 
-								// 모든 클라이언트에게 메세지 출력
-								for (SocketChannel s : allClient) {
-									outputBuf.flip();
+							/*							readyClientID.add(info.getID());
+														if (readyClientID.size() == allClient.size()) {
+															outputBuf.put("START@".getBytes());
+							
+															// 모든 클라이언트에게 메세지 출력
+															for (SocketChannel s : allClient) {
+																outputBuf.flip();
+																s.write(outputBuf);
+															}
+															outputBuf.clear();
+														}*/
+							continue;
+						} else if("ATTAC".equalsIgnoreCase(requestString)) {
+							// talk
+							System.out.println(requestString + "/" + requestString.length());
+							outputBuf.put("ATTACK".getBytes());
+							outputBuf.flip();
+
+							for (SocketChannel s : allClient) {
+								if (!readSocket.equals(s)) {
 									s.write(outputBuf);
+									outputBuf.flip();
 								}
-								outputBuf.clear();
 							}
+
+							inputBuf.clear();
+							outputBuf.clear();
 							continue;
 						}
 
@@ -126,28 +154,22 @@ public class TetrisServer {
 
 	}
 
-	public static boolean isReady(ByteBuffer original) {
+	public static String getRequestString(ByteBuffer original) {
 		int originPos = original.position();
 		int originLimit = original.limit();
-
-		System.out.println("P:" + originPos);
-		System.out.println("L:" + originLimit);
 
 		if (originPos > 0) {
 			original.limit(originPos - 1); // remove enter key;
 		}
 		original.position(0);
+
 		byte[] b = new byte[original.limit()];
 		original.get(b);
-		String pressedKey = new String(b);
-
-		if ("r".equalsIgnoreCase(pressedKey)) {
-			return true;
-		}
+		String requestString = new String(b);
 
 		original.limit(originLimit);
 		original.position(originPos);
-		return false;
+		return requestString;
 	}
 
 }

@@ -104,7 +104,6 @@ public class TetrisGame {
 	private KeyInput keyInput;
 
 	private void gameStart() {
-
 		blockContainer = BlockContainer.getInstance();
 		setNewBlock();
 
@@ -144,7 +143,6 @@ public class TetrisGame {
 	}
 
 	private boolean moveBlockAndRender(JoyPad joyPad) {
-
 		moveBlock(joyPad);
 
 		BlockState blockState = combineBlockToMap();
@@ -251,6 +249,8 @@ public class TetrisGame {
 
 		int blockCount;
 		int tempRow = GameProperties.HEIGHT_PLUS_HIDDEN_START;
+		int num = 0;
+
 		for (int row = GameProperties.HEIGHT_PLUS_HIDDEN_START; row >= 0; row--) {
 			blockCount = 0;
 			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
@@ -262,12 +262,18 @@ public class TetrisGame {
 			// 완벽한 줄들 건너 뜀 == (삭제)
 			// 완벽하지 못 한 줄들 땡김.
 			// 외벽 포함해서(true) 통째로 카운트
-			if (tempRow == (GameProperties.HEIGHT_PLUS_HIDDEN_START)
-					|| blockCount < GameProperties.WIDTH_PLUS_SIDE_BORDERS) {
+			if (tempRow == (GameProperties.HEIGHT_PLUS_HIDDEN_START)) {
 				for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 					tempMap[tempRow][col] = map[row][col];
 				}
 				tempRow--;
+			} else if (blockCount < GameProperties.WIDTH_PLUS_SIDE_BORDERS) {
+				for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+					tempMap[tempRow][col] = map[row][col];
+				}
+				tempRow--;
+			} else {
+				num++;
 			}
 		}
 

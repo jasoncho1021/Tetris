@@ -6,9 +6,9 @@ import tetris.queue.producer.TetrisThread;
 
 public class Producer extends TetrisThread {
 
-	private TetrisQueue tetrisQueue;
+	private TetrisQueue<KeyInput> tetrisQueue;
 
-	public Producer(TetrisQueue tetrisQueue) {
+	public Producer(TetrisQueue<KeyInput> tetrisQueue) {
 		this.tetrisQueue = tetrisQueue;
 	}
 

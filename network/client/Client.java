@@ -4,15 +4,20 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 
-import tetris.TetrisGame;
+import tetris.JobCallBack;
+import tetris.TetrisRender;
+import tetris.TetrisRenderImpl;
 
 public class Client {
 
-	public static void main(String[] args) {
+	private static final String START = "START";
+	public static final String ATTACK = "ATTACK";
+	TetrisRender tetris;
+
+	void startClient() {
 		Thread systemInThread;
 
 		try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("127.0.0.1", 15000))) {
@@ -26,122 +31,96 @@ public class Client {
 			WritableByteChannel out = Channels.newChannel(System.out);
 
 			boolean isGameStarted = false;
-			TetrisGame tetris;
-			while (true) {
-				if (socket.isBlocking()) {
-					System.out.println("yes blocked");
-				}
-				socket.read(buf);
-				System.out.println("vvvvvvvv");
 
-				if (isGameStartCommand(buf)) {
+			tetris = null;
+			String content;
+
+			while (true) {
+
+				socket.read(buf);
+
+				if (isGameStarted) { // ATTACK
+					content = getRequestString(buf, 0);
+				} else { // ATTAC
+					content = getRequestString(buf, 1); // '\n' 제거
+				}
+				System.out.println(content + "/" + content.length());
+
+				if (START.equalsIgnoreCase(content)) {
+					//systemInThread.interrupt();
 					systemIn.stopSend();
+
 					buf.clear();
 					isGameStarted = true;
-					tetris = new TetrisGame(); // new TetrisGame(socket)
-					tetris.start();
+
+					/*	Thread attackThread = new Thread() {
+							public void run() {
+								try {
+									while (true) {
+										Thread.sleep(1000);
+										System.out.println("please attack!!");
+										systemIn.setAttackSending();
+									}
+								} catch (InterruptedException e) {
+					
+								}
+							}
+						};
+					
+						System.out.println("attackThread started");
+						attackThread.start();
+					*/
+					//tetris = new TetrisRenderImpl(new AttackSender(socket));
+
+					tetris = new TetrisRenderImpl(systemIn);
+					tetris.gameStart();
+					continue;
+				} else if (ATTACK.equalsIgnoreCase(content)) {
+					buf.clear();
+
+					tetris.addJob(new JobCallBack() {
+						@Override
+						public void doJob() {
+							
+						}
+					});
 					continue;
 				}
 
-				if (!isGameStarted) {
+				/*if (!isGameStarted) {
 					buf.flip();
 					out.write(buf);
-					buf.clear();
-				} else {
-					//tetris
-				}
+				}*/
+
+				buf.flip();
+				out.write(buf);
+				buf.clear();
+
 			}
 		} catch (IOException e) {
 			System.out.println("IOException: connection is finished");
 		}
-
 	}
 
-	public static boolean isGameStartCommand(ByteBuffer original) {
+	public static String getRequestString(ByteBuffer original, int enterKeyOffset) {
 		int originPos = original.position();
 		int originLimit = original.limit();
 
-		System.out.println("P:" + originPos);
-		System.out.println("L:" + originLimit);
-		original.limit(originPos - 1); // remove enter key;
+		original.limit(originPos - enterKeyOffset); // remove enter key;
 		original.position(0);
-		System.out.println("mid:" + original.position());
+
 		byte[] b = new byte[original.limit()];
 		original.get(b);
 		String pressedKey = new String(b);
-		System.out.println("after:" + original.position());
-		System.out.println(pressedKey + "/" + pressedKey.length());
-		if ("START".equalsIgnoreCase(pressedKey)) {
-			return true;
-		}
 
 		original.limit(originLimit);
 		original.position(originPos);
-		return false;
+
+		return pressedKey;
 	}
 
-}
-
-class SystemIn implements Runnable {
-	private SocketChannel socket;
-
-	SystemIn(SocketChannel socket) {
-		this.socket = socket;
-	}
-
-	private boolean flag = true;
-
-	public void startSend() {
-		flag = true;
-	}
-
-	public void stopSend() {
-		flag = false;
-	}
-
-	private boolean isRunning() {
-		return flag;
-	}
-
-	private void chattingSending() {
-		ReadableByteChannel in = Channels.newChannel(System.in);
-		ByteBuffer buf = ByteBuffer.allocate(1024);
-
-		try {
-			while (isRunning()) {
-				if (System.in.available() != 0) { // non-blocking
-					in.read(buf);
-					buf.flip();
-					socket.write(buf);
-					buf.clear();
-				}
-			}
-			System.out.println("send stoped");
-		} catch (IOException e) {
-			System.out.println("IOException: chatting is impossible");
-		}
-	}
-
-	private void attackSending() {
-		ByteBuffer buf = ByteBuffer.allocate(1024);
-
-		startSend();
-		try {
-			while (isRunning()) {
-				buf.put("ATTACK".getBytes());
-				buf.flip();
-				socket.write(buf);
-				buf.clear();
-			}
-			System.out.println("send stoped");
-		} catch (IOException e) {
-			System.out.println("IOException: chatting is impossible");
-		}
-	}
-
-	@Override
-	public void run() {
-		chattingSending();
-		attackSending();
+	public static void main(String[] args) {
+		Client client = new Client();
+		client.startClient();
 	}
 }
