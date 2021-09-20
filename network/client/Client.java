@@ -15,83 +15,62 @@ public class Client {
 
 	private static final String START = "START";
 	public static final String ATTACK = "ATTACK";
-	TetrisRender tetris;
+
+	private TetrisRender tetris;
 
 	void startClient() {
-		Thread systemInThread;
 
 		try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("127.0.0.1", 15000))) {
-			// 송신
-			SystemIn systemIn = new SystemIn(socket);
-			systemInThread = new Thread(systemIn);
-			systemInThread.start();
+			Thread messageSenderThread;
+			MessageSender messageSender = new MessageSender(socket);
+			messageSenderThread = new Thread(messageSender);
+			messageSenderThread.start();
 
 			// 수신
 			ByteBuffer buf = ByteBuffer.allocate(1024);
 			WritableByteChannel out = Channels.newChannel(System.out);
 
-			boolean isGameStarted = false;
-
-			tetris = null;
-			String content;
+			tetris = new TetrisRenderImpl(messageSender);
+			String keyWord;
 
 			while (true) {
 
 				socket.read(buf);
 
-				if (isGameStarted) { // ATTACK
-					content = getRequestString(buf, 0);
+				if (tetris.isRunning()) {
+					keyWord = getRequestString(buf, 0);
+					// ATTACK
 					buf.clear();
-				} else { // ATTAC
-					content = getRequestString(buf, 1); // '\n' 제거
-					buf.clear();
-					System.out.println(content + "/" + content.length());
-				}
 
-				if (START.equalsIgnoreCase(content)) {
-					//systemInThread.interrupt();
-					systemIn.stopSend();
+					if (ATTACK.equalsIgnoreCase(keyWord)) {
 
-					isGameStarted = true;
-
-					/*	Thread attackThread = new Thread() {
-							public void run() {
-								try {
-									while (true) {
-										Thread.sleep(1000);
-										System.out.println("please attack!!");
-										systemIn.setAttackSending();
-									}
-								} catch (InterruptedException e) {
-					
-								}
+						tetris.addJob(new JobCallBack() {
+							@Override
+							public void doJob() {
+								tetris.addLine();
 							}
-						};
-					
-						System.out.println("attackThread started");
-						attackThread.start();
-					*/
-					//tetris = new TetrisRenderImpl(new AttackSender(socket));
+						});
+						continue;
+					}
+				} else {
+					keyWord = getRequestString(buf, 1); // 끝문자 '\n' '@' 제거
+					// ATTAC
 
-					tetris = new TetrisRenderImpl(systemIn);
-					Thread tetrisThread = new Thread(tetris);
-					tetrisThread.start();
-					continue;
-				} else if (ATTACK.equalsIgnoreCase(content)) {
+					if (START.equalsIgnoreCase(keyWord)) {
+						messageSender.pauseChatting();
 
-					tetris.addJob(new JobCallBack() {
-						@Override
-						public void doJob() {
-							tetris.addLine();
-						}
-					});
-					continue;
+						tetris.startRunning();
+						Thread tetrisThread = new Thread(tetris);
+						tetrisThread.start();
+
+						buf.clear();
+						continue;
+					}
 				}
-
+				// Print Chatting Message
 				buf.flip();
 				out.write(buf);
 				buf.clear();
-
 			}
 		} catch (IOException e) {
 			System.out.println("IOException: connection is finished");

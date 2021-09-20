@@ -9,7 +9,7 @@ import tetris.block.BlockState;
 import tetris.block.container.BlockContainer;
 import tetris.jobqueue.JobInput;
 import tetris.jobqueue.JobQueue;
-import tetris.network.client.SystemIn;
+import tetris.network.client.MessageSender;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
 import tetris.receiver.InputReceiver;
@@ -33,13 +33,25 @@ import tetris.receiver.InputReceiver;
  *
  */
 
-public class TetrisRenderImpl implements TetrisRender {
-
+public class TetrisRenderImpl extends TetrisRender {
 	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 	private BlockMovement block;
 	private BlockContainer blockContainer;
-
 	private TetrisQueue<JobInput> jobQueue = JobQueue.getInstance();
+
+	private volatile boolean isRunning;
+
+	public void startRunning() {
+		this.isRunning = true;
+	}
+
+	public void stopRunning() {
+		this.isRunning = false;
+	}
+
+	public boolean isRunning() {
+		return isRunning;
+	}
 
 	public void gameStart() {
 		InputReceiver inputReceiver;
@@ -107,28 +119,34 @@ public class TetrisRenderImpl implements TetrisRender {
 		}
 	}
 
+	private int flipper = 1;
+
 	public void addLine() {
 		removePreviousFallingBlockFromMap();
 
 		boolean tempRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 		boolean bufRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 
-		for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
-			bufRow[col] = true;
+		for (int col = 1; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+			if ((col % 2) == flipper) {
+				bufRow[col] = true;
+			}
 		}
 		// add
-		for (int row = GameProperties.HEIGHT_PLUS_HIDDEN_START; row >= 0; row--) {
-			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+		for (int row = GameProperties.HEIGHT_PLUS_HIDDEN_START - 1; row >= 0; row--) {
+			for (int col = 1; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 				tempRow[col] = map[row][col];
 			}
 
-			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+			for (int col = 1; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 				map[row][col] = bufRow[col];
 				bufRow[col] = tempRow[col];
 			}
 		}
 
-		moveBlockAndRender(JoyPad.LEFT); // producer 에서 sleep 이후에 넣으면 InputReceiver 쪽 로직에서 종료시킬 것임.
+		flipper = 1 - flipper;
+
+		moveBlockAndRender(JoyPad.UNDEFINED); // producer 에서 sleep 이후에 넣으면 InputReceiver 쪽 로직에서 종료시킬 것임.
 	}
 
 	public boolean moveBlockAndRender(JoyPad joyPad) {
@@ -296,10 +314,7 @@ public class TetrisRenderImpl implements TetrisRender {
 		}
 
 		if (num > 0) {
-			//attackThread = new Thread(attackSender);
-			//attackThread.run();
-
-			systemIn.setAttackSending();
+			messageSender.sendAttackMessage();
 		}
 	}
 
@@ -334,21 +349,13 @@ public class TetrisRenderImpl implements TetrisRender {
 		System.out.print(gameBoard);
 	}
 
-	/*
-	private AttackSender attackSender;
-	private Thread attackThread;
-	public TetrisRenderImpl(AttackSender attackSender) {
-		this.attackSender = attackSender;
-	}
-	*/
-
-	private SystemIn systemIn;
-
-	public TetrisRenderImpl(SystemIn systemIn) {
-		this.systemIn = systemIn;
-	}
-
 	public TetrisRenderImpl() {
+	}
+
+	private MessageSender messageSender;
+
+	public TetrisRenderImpl(MessageSender messageSender) {
+		this.messageSender = messageSender;
 	}
 
 	public static void main(String[] args) {
@@ -359,6 +366,8 @@ public class TetrisRenderImpl implements TetrisRender {
 	@Override
 	public void run() {
 		gameStart();
+		stopRunning();
+		messageSender.resumeChatting();
 	}
 
 }

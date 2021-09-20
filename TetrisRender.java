@@ -1,14 +1,23 @@
 package tetris;
 
-public interface TetrisRender extends Runnable {
-	public boolean moveBlockAndRender(JoyPad joyPad);
+import tetris.queue.producer.TetrisThread;
 
-	public void addJob(JobCallBack jobCallBack);
+public abstract class TetrisRender extends TetrisThread {
+	public boolean moveBlockAndRender(JoyPad joyPad) {
+		return false;
+	}
 
-	public void gameStart();
+	public void addJob(JobCallBack jobCallBack) {
+	}
 
-	public void addLine();
-	/*	public void renderErased();
+	public void gameStart() {
+	}
+
+	public void addLine() {
+	}
+
+	/*
+		public void renderErased();
 		public StringBuilder setGameBoard();
 		public void renderGameBoard(String gameBoard);
 		public void removePerfectLine();
