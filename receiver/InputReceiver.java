@@ -1,5 +1,11 @@
 package tetris.receiver;
 
+import java.lang.management.ManagementFactory;
+
+import org.apache.log4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import tetris.GameException;
 import tetris.JobCallBack;
 import tetris.JoyPad;
@@ -12,6 +18,14 @@ import tetris.queue.producer.impl.InputConsole;
 import tetris.queue.producer.impl.Producer;
 
 public class InputReceiver extends TetrisThread {
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	{
+		// Get the process id
+		String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("@.*", "");
+		// MDC
+		MDC.put("PID", pid);
+	}
 
 	private TetrisThread inputConsole;
 	private TetrisThread producer;
@@ -41,7 +55,8 @@ public class InputReceiver extends TetrisThread {
 			}
 
 			if (joyPad == JoyPad.QUIT) {
-				stopRunning();
+				stopRunning(); // InputReceiver 리소스 정리하는 동안 jobQueue에 들어온 addLine 명령들을 수행하지 않기 위해 미리 중단.
+				logger.debug("break");
 				return;
 			}
 
@@ -76,12 +91,11 @@ public class InputReceiver extends TetrisThread {
 	@Override
 	public void run() {
 		try {
-			//startRunning();
 			gameStart();
-			//stopRunning();
 		} catch (GameException e) {
 			e.printGameExceptionStack();
 		} finally {
+			logger.debug("finally");
 			inputConsole.stopRunning();
 
 			producer.stopRunning();
@@ -90,22 +104,22 @@ public class InputReceiver extends TetrisThread {
 			try {
 				if (consoleThread != null) {
 					consoleThread.join();
-					System.out.println("console join");
+					logger.debug("console join");
 				}
 
 				if (producerThread != null) {
 					producerThread.join();
-					System.out.println("producer join");
+					logger.debug("producer join");
 				}
 
 				tetrisRender.addJob(new JobCallBack() {
 					@Override
 					public void doJob() {
-						// add to JobQuee to notifyAll
+						// add this job to break jobQueue.get() blocking state
 					}
 				});
 			} catch (InterruptedException ie) {
-				System.out.println("console or producer join interrupted");
+				logger.debug("console or producer join interrupted");
 			}
 
 		}

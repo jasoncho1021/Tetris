@@ -3,7 +3,9 @@ package tetris;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
 
+import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,13 @@ import tetris.receiver.InputReceiver;
 public class TetrisRenderImpl extends TetrisRender {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+	{
+		// Get the process id
+		String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("@.*", "");
+		// MDC
+		MDC.put("PID", pid);
+	}
+
 	private boolean map[][];
 	private BlockMovement block;
 	private BlockContainer blockContainer;
@@ -61,6 +70,7 @@ public class TetrisRenderImpl extends TetrisRender {
 	public void gameStart() {
 		InputReceiver inputReceiver;
 		Thread inputReceiverThread = null;
+		logger.debug("gameStart");
 
 		try {
 			blockContainer = BlockContainer.getInstance();
@@ -88,6 +98,7 @@ public class TetrisRenderImpl extends TetrisRender {
 				jobQueue.get(jobInput); // blocking,,until inputReceiver addJob or Attack addJob
 				doJobCallBack(jobInput.getItem());
 			}
+			logger.debug("inputReceiver.isRunning() : " + inputReceiver.isRunning());
 
 		} catch (GameException e) {
 			e.printGameExceptionStack();
@@ -95,10 +106,10 @@ public class TetrisRenderImpl extends TetrisRender {
 			try {
 				if (inputReceiverThread != null) {
 					inputReceiverThread.join();
-					System.out.println("inputReceiver join");
+					logger.debug("inputReceiver join");
 				}
 			} catch (InterruptedException e) {
-				System.out.println("inputReceiver join interrupted");
+				logger.debug("inputReceiver join interrupted");
 			}
 		}
 

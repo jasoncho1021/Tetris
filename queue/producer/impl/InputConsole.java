@@ -23,8 +23,8 @@ public class InputConsole extends TetrisThread {
 			setTerminalToCBreak();
 
 			while (isRunning()) { // polling with non-blocking syscall
-				if (System.in.available() != 0) { // non-blocking
-					tetrisQueue.add(new KeyInput((char) System.in.read())); // blocking
+				if (System.in.available() != 0) { // avoid calling blocking syscall by using non-blocking syscall as a condition
+					tetrisQueue.add(new KeyInput((char) System.in.read())); // System.in.read() is blocking
 				}
 			}
 		} catch (IOException e) {

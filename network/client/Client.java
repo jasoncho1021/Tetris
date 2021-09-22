@@ -1,17 +1,31 @@
 package tetris.network.client;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 
+import org.apache.log4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import tetris.GameException;
 import tetris.JobCallBack;
 import tetris.TetrisRender;
 import tetris.TetrisRenderImpl;
 
 public class Client {
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	{
+		// Get the process id
+		String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("@.*", "");
+		// MDC
+		MDC.put("PID", pid);
+	}
 
 	private static final String START = "START";
 	public static final String ATTACK = "ATTACK";
@@ -21,9 +35,11 @@ public class Client {
 
 	void startClient() {
 
+		Thread messageSenderThread = null;
+		MessageSender messageSender = null;
+
 		try (SocketChannel socket = SocketChannel.open(new InetSocketAddress("127.0.0.1", 15000))) {
-			Thread messageSenderThread;
-			MessageSender messageSender = new MessageSender(socket);
+			messageSender = new MessageSender(socket);
 			messageSenderThread = new Thread(messageSender);
 			messageSenderThread.start();
 
@@ -69,14 +85,6 @@ public class Client {
 					}
 
 					if (QUIT.equals(keyWord)) {
-						messageSender.stopSend();
-						try {
-							messageSenderThread.join();
-							System.out.println("msgThread join");
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
 						break;
 					}
 				}
@@ -87,7 +95,21 @@ public class Client {
 			}
 
 		} catch (IOException e) {
-			System.out.println("IOException: connection is finished");
+			logger.debug("IOException: connection is finished");
+		} catch (GameException ge) {
+			logger.debug("server is down");
+		} finally {
+			if (messageSender != null) {
+				messageSender.stopSend();
+				try {
+					if (messageSenderThread != null) {
+						messageSenderThread.join();
+						logger.debug("msgThread join");
+					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 
@@ -95,7 +117,11 @@ public class Client {
 		int originPos = original.position();
 		int originLimit = original.limit();
 
-		original.limit(originPos - enterKeyOffset); // remove enter key;
+		try {
+			original.limit(originPos - enterKeyOffset); // remove enter key;
+		} catch (IllegalArgumentException ie) {
+			throw new GameException(ie);
+		}
 		original.position(0);
 
 		byte[] b = new byte[original.limit()];

@@ -3,6 +3,7 @@ package tetris.network.server;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -13,13 +14,24 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.apache.log4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TetrisServer {
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+	{
+		// Get the process id
+		String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("@.*", "");
+		// MDC
+		MDC.put("PID", pid);
+	}
 
 	private static final String READY = "r";
 	private static final String QUIT = "Q";
 
-	public static void main(String[] args) {
-
+	private void runTetrisServer() {
 		Thread keyListenerThread = new KeyListener();
 		keyListenerThread.start();
 
@@ -42,8 +54,8 @@ public class TetrisServer {
 			Integer autoIncrementIdx = 0;
 			int read;
 			while (keyListenerThread.isAlive()) {
-				//selector.select();
-				selector.selectNow();
+				//selector.select(); // blocking
+				selector.selectNow(); // non-blocking, to quit by Q input from the server terminal
 
 				Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
 
@@ -83,8 +95,8 @@ public class TetrisServer {
 							key.cancel();
 							allClient.remove(readSocket);
 
-							String end = info.getID() + "'s connection is finished by EXCEPTION\n";
-							System.out.print(end);
+							String end = info.getID() + "'s connection is finished by EXCEPTION";
+							logger.debug(end);
 
 							outputBuf.put(end.getBytes());
 							for (SocketChannel s : allClient) {
@@ -150,21 +162,6 @@ public class TetrisServer {
 							inputBuf.clear();
 							outputBuf.clear();
 
-							//
-							//key.cancel();
-							//readSocket.close();
-							/*				allClient.remove(readSocket);
-							
-											String end = info.getID() + "'s connection is finished by EXCEPTION\n";
-											System.out.print(end);
-							
-											outputBuf.put(end.getBytes());
-											for (SocketChannel s : allClient) {
-												outputBuf.flip();
-												s.write(outputBuf);
-											}
-											outputBuf.clear();*/
-
 							continue;
 						}
 
@@ -196,6 +193,12 @@ public class TetrisServer {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static void main(String[] args) {
+		TetrisServer tetrisServer = new TetrisServer();
+		tetrisServer.runTetrisServer();
+
 	}
 
 	public static String getRequestString(ByteBuffer original) {
