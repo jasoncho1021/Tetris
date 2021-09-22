@@ -95,9 +95,7 @@ public class Client {
 		int originPos = original.position();
 		int originLimit = original.limit();
 
-		if (originPos > 0) {
-			original.limit(originPos - enterKeyOffset); // remove enter key;
-		}
+		original.limit(originPos - enterKeyOffset); // remove enter key;
 		original.position(0);
 
 		byte[] b = new byte[original.limit()];

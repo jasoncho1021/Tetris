@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import tetris.block.BlockMovement;
 import tetris.block.BlockState;
 import tetris.block.container.BlockContainer;
@@ -34,6 +37,8 @@ import tetris.receiver.InputReceiver;
  */
 
 public class TetrisRenderImpl extends TetrisRender {
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
+
 	private boolean map[][];
 	private BlockMovement block;
 	private BlockContainer blockContainer;
@@ -56,6 +61,7 @@ public class TetrisRenderImpl extends TetrisRender {
 	public void gameStart() {
 		InputReceiver inputReceiver;
 		Thread inputReceiverThread = null;
+
 		try {
 			blockContainer = BlockContainer.getInstance();
 			setNewBlock();
