@@ -15,6 +15,7 @@ public class Client {
 
 	private static final String START = "START";
 	public static final String ATTACK = "ATTACK";
+	public static final String QUIT = "QUIT";
 
 	private TetrisRender tetris;
 
@@ -50,8 +51,8 @@ public class Client {
 								tetris.addLine();
 							}
 						});
-						continue;
 					}
+					continue;
 				} else {
 					keyWord = getRequestString(buf, 1); // 끝문자 '\n' '@' 제거
 					// ATTAC
@@ -66,12 +67,25 @@ public class Client {
 						buf.clear();
 						continue;
 					}
+
+					if (QUIT.equals(keyWord)) {
+						messageSender.stopSend();
+						try {
+							messageSenderThread.join();
+							System.out.println("msgThread join");
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						break;
+					}
 				}
 				// Print Chatting Message
 				buf.flip();
 				out.write(buf);
 				buf.clear();
 			}
+
 		} catch (IOException e) {
 			System.out.println("IOException: connection is finished");
 		}
@@ -81,7 +95,9 @@ public class Client {
 		int originPos = original.position();
 		int originLimit = original.limit();
 
-		original.limit(originPos - enterKeyOffset); // remove enter key;
+		if (originPos > 0) {
+			original.limit(originPos - enterKeyOffset); // remove enter key;
+		}
 		original.position(0);
 
 		byte[] b = new byte[original.limit()];

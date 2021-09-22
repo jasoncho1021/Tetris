@@ -42,6 +42,7 @@ public abstract class Block implements BlockMovement {
 
 	protected abstract void initShape();
 
+	// block 의 중심 좌표만 수정한다. map에 적용하지는 않는다.
 	@Override
 	public void doKeyEvent(JoyPad joyPad, final boolean[][] map) {
 		switch (joyPad) {

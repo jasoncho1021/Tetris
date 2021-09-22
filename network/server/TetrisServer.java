@@ -1,6 +1,8 @@
 package tetris.network.server;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -14,8 +16,12 @@ import java.util.Set;
 public class TetrisServer {
 
 	private static final String READY = "r";
+	private static final String QUIT = "Q";
 
 	public static void main(String[] args) {
+
+		Thread keyListenerThread = new KeyListener();
+		keyListenerThread.start();
 
 		try (ServerSocketChannel serverSocket = ServerSocketChannel.open()) {
 
@@ -34,8 +40,10 @@ public class TetrisServer {
 			ByteBuffer outputBuf = ByteBuffer.allocate(1024);
 
 			Integer autoIncrementIdx = 0;
-			while (true) {
-				selector.select();
+			int read;
+			while (keyListenerThread.isAlive()) {
+				//selector.select();
+				selector.selectNow();
 
 				Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
 
@@ -67,7 +75,10 @@ public class TetrisServer {
 						System.out.println("------------");
 
 						try {
-							readSocket.read(inputBuf);
+							read = readSocket.read(inputBuf);
+							if (read == -1) {
+								throw new IOException("Socket closed");
+							}
 						} catch (Exception e) {
 							key.cancel();
 							allClient.remove(readSocket);
@@ -110,23 +121,50 @@ public class TetrisServer {
 									s.write(outputBuf);
 								}
 								outputBuf.clear();
+								readyClientID = new HashSet<>();
 							}
 							continue;
 						} else if ("ATTAC".equalsIgnoreCase(requestString)) {
 							// talk
 							System.out.println(requestString + "/" + requestString.length());
 							outputBuf.put("ATTACK".getBytes());
-							outputBuf.flip();
 
 							for (SocketChannel s : allClient) {
 								if (!readSocket.equals(s)) {
-									s.write(outputBuf);
 									outputBuf.flip();
+									s.write(outputBuf);
 								}
 							}
 
 							inputBuf.clear();
 							outputBuf.clear();
+							continue;
+						} else if (QUIT.equals(requestString)) {
+							// talk
+							System.out.println(requestString + "/" + requestString.length());
+							outputBuf.put("QUIT@".getBytes());
+
+							outputBuf.flip();
+							readSocket.write(outputBuf);
+
+							inputBuf.clear();
+							outputBuf.clear();
+
+							//
+							//key.cancel();
+							//readSocket.close();
+							/*				allClient.remove(readSocket);
+							
+											String end = info.getID() + "'s connection is finished by EXCEPTION\n";
+											System.out.print(end);
+							
+											outputBuf.put(end.getBytes());
+											for (SocketChannel s : allClient) {
+												outputBuf.flip();
+												s.write(outputBuf);
+											}
+											outputBuf.clear();*/
+
 							continue;
 						}
 
@@ -152,6 +190,12 @@ public class TetrisServer {
 			e.printStackTrace();
 		}
 
+		try {
+			keyListenerThread.join();
+			System.out.println("keyListener join");
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static String getRequestString(ByteBuffer original) {
@@ -185,4 +229,27 @@ class ClientInfo {
 	public Integer getID() {
 		return this.id;
 	}
+}
+
+class KeyListener extends Thread {
+
+	@Override
+	public void run() {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		String input;
+		while (true) {
+			try {
+				input = br.readLine();
+				System.out.println(input + " " + input.length());
+				if (input.equalsIgnoreCase("Q")) {
+					break;
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		System.out.println("end");
+	}
+
 }

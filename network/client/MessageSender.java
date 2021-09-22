@@ -60,6 +60,7 @@ public class MessageSender implements Runnable {
 			} catch (IOException e) {
 				System.out.println("IOException: chatting is impossible");
 				e.printStackTrace();
+				break;
 			}
 		}
 	}
@@ -92,6 +93,7 @@ public class MessageSender implements Runnable {
 	@Override
 	public void run() {
 		sendChatting();
+		System.out.println("msg end");
 	}
 
 }

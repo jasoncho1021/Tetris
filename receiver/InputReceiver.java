@@ -25,7 +25,7 @@ public class InputReceiver extends TetrisThread {
 		startRunning();
 	}
 
-	public void gameStart() {
+	private void gameStart() {
 		initInputListener();
 
 		while (true) {

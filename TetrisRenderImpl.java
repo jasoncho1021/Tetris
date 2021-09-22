@@ -34,7 +34,7 @@ import tetris.receiver.InputReceiver;
  */
 
 public class TetrisRenderImpl extends TetrisRender {
-	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
+	private boolean map[][];
 	private BlockMovement block;
 	private BlockContainer blockContainer;
 	private TetrisQueue<JobInput> jobQueue = JobQueue.getInstance();
@@ -67,7 +67,7 @@ public class TetrisRenderImpl extends TetrisRender {
 				@Override
 				public void doJob() {
 					block.setBlockToMap(map);
-					KeyInput keyInput = new KeyInput('x');
+					KeyInput keyInput = new KeyInput('x'); // UNDEFINED
 					render(BlockState.FALLING, keyInput.getItem());
 				}
 			});
@@ -107,6 +107,8 @@ public class TetrisRenderImpl extends TetrisRender {
 	}
 
 	private void initBorder() {
+		map = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
+
 		for (int row = 0; row < GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER; row++) {
 			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 				if (col == 0 || col > GameProperties.WIDTH) {
@@ -122,6 +124,15 @@ public class TetrisRenderImpl extends TetrisRender {
 	private int flipper = 1;
 
 	public void addLine() {
+
+		moveBlock(JoyPad.DOWN);
+		if (!block.isPossibleToPut(map)) {
+			block.recoverY();
+			block.setBlockToMap(map);
+			removePerfectLine();
+			setNewBlock();
+		}
+
 		removePreviousFallingBlockFromMap();
 
 		boolean tempRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];
@@ -146,7 +157,7 @@ public class TetrisRenderImpl extends TetrisRender {
 
 		flipper = 1 - flipper;
 
-		moveBlockAndRender(JoyPad.UNDEFINED); // producer 에서 sleep 이후에 넣으면 InputReceiver 쪽 로직에서 종료시킬 것임.
+		moveBlockAndRender(JoyPad.UNDEFINED); // producer 에서 sleep 이후에 tetrisQueue에 값 넣으면 InputReceiver 쪽 tetrisQueue.get 이후 로직에서 종료시킬 것임.
 	}
 
 	public boolean moveBlockAndRender(JoyPad joyPad) {
