@@ -29,13 +29,15 @@ public class TetrisServer {
 	}
 
 	private static final String READY = "r";
-	private static final String QUIT = "Q";
+	static final String QUIT = "Q";
 
 	private void runTetrisServer() {
-		Thread keyListenerThread = new KeyListener();
-		keyListenerThread.start();
 
+		Thread keyListenerThread = null;
 		try (ServerSocketChannel serverSocket = ServerSocketChannel.open()) {
+
+			keyListenerThread = new KeyListener();
+			keyListenerThread.start();
 
 			serverSocket.bind(new InetSocketAddress(15000));
 			serverSocket.configureBlocking(false);
@@ -184,15 +186,19 @@ public class TetrisServer {
 				}
 			}
 		} catch (IOException e) {
+			logger.debug("server exception");
 			e.printStackTrace();
+		} finally {
+			try {
+				if (keyListenerThread != null) {
+					keyListenerThread.join();
+					System.out.println("keyListener join");
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 
-		try {
-			keyListenerThread.join();
-			System.out.println("keyListener join");
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public static void main(String[] args) {
@@ -244,11 +250,10 @@ class KeyListener extends Thread {
 			try {
 				input = br.readLine();
 				System.out.println(input + " " + input.length());
-				if (input.equalsIgnoreCase("Q")) {
+				if (input.equalsIgnoreCase(TetrisServer.QUIT)) {
 					break;
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

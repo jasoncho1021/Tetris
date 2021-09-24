@@ -55,24 +55,33 @@ public class InputReceiver extends TetrisThread {
 			}
 
 			if (joyPad == JoyPad.QUIT) {
-				stopRunning(); // InputReceiver 리소스 정리하는 동안 jobQueue에 들어온 addLine 명령들을 수행하지 않기 위해 미리 중단.
+				/*
+				 * InputReceiver 리소스 정리하는 동안 jobQueue에 들어온 addLine 명령들을 수행하지 않기 위해 미리 중단.
+				 * while(inputReceiver.isRunning())
+				*/
 				logger.debug("break");
+				if (isRunning()) {
+					stopRunning();
+					tetrisRender.finishJob();
+				}
 				return;
 			}
 
-			tetrisRender.addJob(new JobCallBack() {
-				@Override
-				public void doJob() {
-					if (!tetrisRender.moveBlockAndRender(joyPad)) {
-						/* 어차피 이 스레드 사라지면 tetris참조도 사라짐..
-						 * 따라서, finally에서 종료된거 확인하고 종료시켜야함.
-						 * 아님.
-						 */
-						tetrisQueue.add(new KeyInput('z')); // 천장 닿아서 종료
-						// joyPad == JoyPad.QUIT 으로 
+			if (isRunning()) {
+				tetrisRender.addJob(new JobCallBack() {
+					@Override
+					public void doJob() {
+						//logger.debug("addJob: moveBlockAndRender");
+						if (!tetrisRender.moveBlockAndRender(joyPad)) {
+							logger.debug("ceil");
+							tetrisQueue.add(new KeyInput('z')); // 천장 닿아서 종료
+							// joyPad == JoyPad.QUIT 으로 
+							stopRunning();
+							//tetrisRender.finishJob();
+						}
 					}
-				}
-			});
+				});
+			}
 		}
 	}
 
@@ -112,12 +121,6 @@ public class InputReceiver extends TetrisThread {
 					logger.debug("producer join");
 				}
 
-				tetrisRender.addJob(new JobCallBack() {
-					@Override
-					public void doJob() {
-						// add this job to break jobQueue.get() blocking state
-					}
-				});
 			} catch (InterruptedException ie) {
 				logger.debug("console or producer join interrupted");
 			}

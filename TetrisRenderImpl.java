@@ -14,9 +14,9 @@ import tetris.block.BlockState;
 import tetris.block.container.BlockContainer;
 import tetris.jobqueue.JobInput;
 import tetris.jobqueue.JobQueue;
+import tetris.jobqueue.JobQueueImpl;
 import tetris.network.client.MessageSender;
 import tetris.queue.KeyInput;
-import tetris.queue.TetrisQueue;
 import tetris.receiver.InputReceiver;
 
 /**
@@ -51,7 +51,7 @@ public class TetrisRenderImpl extends TetrisRender {
 	private boolean map[][];
 	private BlockMovement block;
 	private BlockContainer blockContainer;
-	private TetrisQueue<JobInput> jobQueue = JobQueue.getInstance();
+	private JobQueue<JobInput> jobQueue = JobQueueImpl.getInstance();
 
 	private volatile boolean isRunning;
 
@@ -95,13 +95,17 @@ public class TetrisRenderImpl extends TetrisRender {
 			JobInput jobInput;
 			while (inputReceiver.isRunning()) {
 				jobInput = new JobInput();
+				//logger.debug("get blocked");
 				jobQueue.get(jobInput); // blocking,,until inputReceiver addJob or Attack addJob
 				doJobCallBack(jobInput.getItem());
 			}
+
+			jobQueue.init();
 			logger.debug("inputReceiver.isRunning() : " + inputReceiver.isRunning());
 
 		} catch (GameException e) {
 			e.printGameExceptionStack();
+			logger.debug("game exception");
 		} finally {
 			try {
 				if (inputReceiverThread != null) {
@@ -119,7 +123,12 @@ public class TetrisRenderImpl extends TetrisRender {
 		jobQueue.add(new JobInput(jobCallBack));
 	}
 
+	public void finishJob() {
+		jobQueue.finish();
+	}
+
 	private void doJobCallBack(JobCallBack jobCallBack) {
+		//logger.debug("do job callback");
 		jobCallBack.doJob();
 	}
 

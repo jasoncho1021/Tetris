@@ -64,6 +64,7 @@ public class Client {
 						tetris.addJob(new JobCallBack() {
 							@Override
 							public void doJob() {
+								//logger.debug("addJob: add Line");
 								tetris.addLine();
 							}
 						});

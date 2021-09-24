@@ -18,10 +18,6 @@ public abstract class TetrisRender extends TetrisThread {
 	public void addLine() {
 	}
 
-	/*
-		public void renderErased();
-		public StringBuilder setGameBoard();
-		public void renderGameBoard(String gameBoard);
-		public void removePerfectLine();
-	*/
+	public void finishJob() {
+	}
 }
