@@ -19,6 +19,7 @@ https://github.com/jasoncho1021/Tetris/blob/main/TetrisGame.java#L53
 4-2. 매번 동일한 위치에서 게임 화면 갱신될 수 있도록 쉘에 출력된 행 삭제하는 쉘 스크립트 작성    
 
 ## [v2.0] SEVER 요구사항(멀티플레이)    
+Java NIO server  
 
 * 접속 Phase  
 1. 서버 접속   
