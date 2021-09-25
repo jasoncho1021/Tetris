@@ -10,7 +10,7 @@ public class MessageSender implements Runnable {
 
 	private SocketChannel socket;
 	private Object blockerObj = new Object();
-	private volatile boolean blocker;
+	private volatile boolean isPaused;
 	private volatile boolean runningFlag;
 
 	MessageSender(SocketChannel socket) {
@@ -31,20 +31,20 @@ public class MessageSender implements Runnable {
 
 	public void resumeChatting() {
 		synchronized (blockerObj) {
-			blocker = true;
+			isPaused = false;
 			blockerObj.notifyAll();
 		}
 	}
 
 	public void pauseChatting() {
 		synchronized (blockerObj) {
-			blocker = false;
+			isPaused = true;
 		}
 	}
 
 	private void sendChatting() {
 		startSend();
-		blocker = true;
+		isPaused = false;
 
 		ReadableByteChannel in = Channels.newChannel(System.in);
 		ByteBuffer buf = ByteBuffer.allocate(1024);
@@ -67,7 +67,7 @@ public class MessageSender implements Runnable {
 
 	private void checkBlocking() {
 		synchronized (blockerObj) {
-			while (!blocker) {
+			while (isPaused) {
 				try {
 					blockerObj.wait();
 				} catch (InterruptedException e) {

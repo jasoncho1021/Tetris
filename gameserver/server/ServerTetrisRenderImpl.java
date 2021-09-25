@@ -1,23 +1,24 @@
-package tetris;
+package tetris.gameserver.server;
 
-import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 
 import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import tetris.GameException;
+import tetris.GameProperties;
+import tetris.JobCallBack;
+import tetris.JoyPad;
 import tetris.block.BlockMovement;
 import tetris.block.BlockState;
 import tetris.block.container.BlockContainer;
 import tetris.jobqueue.JobInput;
 import tetris.jobqueue.JobQueue;
 import tetris.jobqueue.JobQueueImpl;
-import tetris.network.client.MessageSender;
 import tetris.queue.KeyInput;
-import tetris.receiver.InputReceiver;
 
 /**
  * ubuntu bash 창에서 play 가능합니다.
@@ -38,7 +39,7 @@ import tetris.receiver.InputReceiver;
  *
  */
 
-public class TetrisRenderImpl extends TetrisRender {
+public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	{
@@ -52,6 +53,7 @@ public class TetrisRenderImpl extends TetrisRender {
 	private BlockMovement block;
 	private BlockContainer blockContainer;
 	private JobQueue<JobInput> jobQueue = JobQueueImpl.getInstance();
+	private ServerInputReceiver serverInputReceiver;
 
 	private volatile boolean isRunning;
 
@@ -68,9 +70,9 @@ public class TetrisRenderImpl extends TetrisRender {
 	}
 
 	public void gameStart() {
-		InputReceiver inputReceiver;
-		Thread inputReceiverThread = null;
+
 		logger.debug("gameStart");
+		Thread serverInputReceiverThread = null;
 
 		try {
 			blockContainer = BlockContainer.getInstance();
@@ -88,12 +90,12 @@ public class TetrisRenderImpl extends TetrisRender {
 				}
 			});
 
-			inputReceiver = new InputReceiver(this);
-			inputReceiverThread = new Thread(inputReceiver);
-			inputReceiverThread.start();
+			serverInputReceiver = new ServerInputReceiver(this);
+			serverInputReceiverThread = new Thread(serverInputReceiver);
+			serverInputReceiverThread.start();
 
 			JobInput jobInput;
-			while (inputReceiver.isRunning()) {
+			while (isRunning()) {
 				jobInput = new JobInput();
 				//logger.debug("get blocked");
 				jobQueue.get(jobInput); // blocking,,until inputReceiver addJob or Attack addJob
@@ -101,22 +103,24 @@ public class TetrisRenderImpl extends TetrisRender {
 			}
 
 			jobQueue.init();
-			logger.debug("inputReceiver.isRunning() : " + inputReceiver.isRunning());
 
 		} catch (GameException e) {
 			e.printGameExceptionStack();
 			logger.debug("game exception");
 		} finally {
 			try {
-				if (inputReceiverThread != null) {
-					inputReceiverThread.join();
-					logger.debug("inputReceiver join");
+				if (serverInputReceiverThread != null) {
+					serverInputReceiverThread.join();
+					logger.debug("serverInputReceiver join");
 				}
 			} catch (InterruptedException e) {
 				logger.debug("inputReceiver join interrupted");
 			}
 		}
+	}
 
+	public void addInput(Character input) {
+		serverInputReceiver.addInput(input);
 	}
 
 	public void addJob(JobCallBack jobCallBack) {
@@ -194,7 +198,6 @@ public class TetrisRenderImpl extends TetrisRender {
 			return false;
 		}
 
-		renderErased();
 		render(blockState, joyPad);
 
 		return true; // TOUCH_DOWN, FALLING
@@ -267,10 +270,6 @@ public class TetrisRenderImpl extends TetrisRender {
 		}
 
 		renderGameBoard(sb.toString());
-	}
-
-	public void renderErased() {
-		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER_PLUS_INPUT));
 	}
 
 	public StringBuilder setGameBoard() {
@@ -351,62 +350,44 @@ public class TetrisRenderImpl extends TetrisRender {
 		}
 
 		if (num > 0) {
-			if (messageSender != null) {
-				messageSender.sendAttackMessage();
-			}
+			//messageSender.sendAttackMessage();
 		}
-	}
-
-	private String erase(int rowsToErase) {
-		/*
-		 * dir
-		 * 1. eclipse : project/
-		 * 2. console : project/bin
-		 */
-		String dir = System.getProperty("user.dir");
-		String path = dir + "/multilineEraser.sh";
-
-		String[] cmd = { path, String.valueOf(rowsToErase) };
-
-		String gameBoard = "";
-		try {
-			Process process = Runtime.getRuntime().exec(cmd);
-			BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-			StringBuilder builder = new StringBuilder();
-			String line = null;
-			while ((line = reader.readLine()) != null) {
-				builder.append(line);
-			}
-			gameBoard = builder.toString();
-		} catch (IOException e) {
-			throw new GameException(e);
-		}
-		return gameBoard;
 	}
 
 	public void renderGameBoard(String gameBoard) {
-		System.out.print(gameBoard);
+		//System.out.print(gameBoard);
+		try {
+			out.writeUTF(gameBoard);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
-	public TetrisRenderImpl() {
+	public ServerTetrisRenderImpl() {
 	}
 
-	private MessageSender messageSender;
+	private DataOutputStream out;
 
-	public TetrisRenderImpl(MessageSender messageSender) {
-		this.messageSender = messageSender;
+	public ServerTetrisRenderImpl(DataOutputStream out) {
+		this.out = out;
 	}
 
 	public static void main(String[] args) {
-		TetrisRenderImpl tetrisGameImpl = new TetrisRenderImpl();
+		ServerTetrisRenderImpl tetrisGameImpl = new ServerTetrisRenderImpl();
 		tetrisGameImpl.gameStart();
 	}
 
 	@Override
 	public void run() {
 		gameStart();
-		stopRunning();
-		messageSender.resumeChatting();
+		//stopRunning();
+		logger.debug("render end");
+		try {
+			out.writeUTF(GameServer.GAMEOVER);
+			Thread.sleep(200);
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 }
