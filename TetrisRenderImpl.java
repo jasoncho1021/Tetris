@@ -3,16 +3,21 @@ package tetris;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+
+import org.apache.log4j.MDC;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import tetris.block.BlockMovement;
 import tetris.block.BlockState;
 import tetris.block.container.BlockContainer;
+import tetris.jobqueue.JobInput;
+import tetris.jobqueue.JobQueue;
+import tetris.jobqueue.JobQueueImpl;
+import tetris.network.client.MessageSender;
 import tetris.queue.KeyInput;
-import tetris.queue.TetrisQueue;
-import tetris.queue.impl.InputQueue;
-import tetris.queue.producer.TetrisThread;
-import tetris.queue.producer.impl.InputConsole;
-import tetris.queue.producer.impl.Producer;
+import tetris.receiver.InputReceiver;
 
 /**
  * ubuntu bash 창에서 play 가능합니다.
@@ -33,47 +38,103 @@ import tetris.queue.producer.impl.Producer;
  *
  */
 
-public class TetrisGame {
+public class TetrisRenderImpl extends TetrisRender {
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
+	{
+		// Get the process id
+		String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("@.*", "");
+		// MDC
+		MDC.put("PID", pid);
+	}
+
+	private boolean map[][];
 	private BlockMovement block;
 	private BlockContainer blockContainer;
-	private TetrisQueue<KeyInput> tetrisQueue;
-	private TetrisThread inputConsole;
-	private TetrisThread producer;
-	private Thread consoleThread;
-	private Thread producerThread;
+	private JobQueue<JobInput> jobQueue = JobQueueImpl.getInstance();
 
-	private boolean map[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
+	private volatile boolean isRunning;
 
-	public void start() {
+	public void startRunning() {
+		this.isRunning = true;
+	}
+
+	public void stopRunning() {
+		this.isRunning = false;
+	}
+
+	public boolean isRunning() {
+		return isRunning;
+	}
+
+	public void gameStart() {
+		InputReceiver inputReceiver;
+		Thread inputReceiverThread = null;
+		logger.debug("gameStart");
+
 		try {
+			blockContainer = BlockContainer.getInstance();
+			setNewBlock();
+
 			initBorder();
-			initInputListener();
-			gameStart();
-		} catch (GameException e) {
-			e.printGameExceptionStack();
-		} finally {
-			inputConsole.stopRunning();
 
-			producer.stopRunning();
-			producerThread.interrupt();
+			// before producer thread add keyInput in inputReceiverThread
+			addJob(new JobCallBack() {
+				@Override
+				public void doJob() {
+					block.setBlockToMap(map);
+					KeyInput keyInput = new KeyInput('x'); // UNDEFINED
+					render(BlockState.FALLING, keyInput.getItem());
+				}
+			});
 
-			try {
-				consoleThread.join();
-				System.out.println("console join");
+			inputReceiver = new InputReceiver(this);
+			inputReceiverThread = new Thread(inputReceiver);
+			inputReceiverThread.start();
 
-				producerThread.join();
-				System.out.println("producer join");
-
-				System.out.println("game ended");
-			} catch (InterruptedException ie) {
-				System.out.println("join interrupted");
+			JobInput jobInput;
+			while (inputReceiver.isRunning()) {
+				jobInput = new JobInput();
+				//logger.debug("get blocked");
+				jobQueue.get(jobInput); // blocking,,until inputReceiver addJob or Attack addJob
+				doJobCallBack(jobInput.getItem());
 			}
 
+			jobQueue.init();
+			logger.debug("inputReceiver.isRunning() : " + inputReceiver.isRunning());
+
+		} catch (GameException e) {
+			e.printGameExceptionStack();
+			logger.debug("game exception");
+		} finally {
+			try {
+				if (inputReceiverThread != null) {
+					inputReceiverThread.join();
+					logger.debug("inputReceiver join");
+				}
+			} catch (InterruptedException e) {
+				logger.debug("inputReceiver join interrupted");
+			}
 		}
+
+	}
+
+	public void addJob(JobCallBack jobCallBack) {
+		jobQueue.add(new JobInput(jobCallBack));
+	}
+
+	public void finishJob() {
+		jobQueue.finish();
+	}
+
+	private void doJobCallBack(JobCallBack jobCallBack) {
+		//logger.debug("do job callback");
+		jobCallBack.doJob();
 	}
 
 	private void initBorder() {
+		map = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
+
 		for (int row = 0; row < GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER; row++) {
 			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
 				if (col == 0 || col > GameProperties.WIDTH) {
@@ -86,63 +147,46 @@ public class TetrisGame {
 		}
 	}
 
-	private void initInputListener() {
-		this.tetrisQueue = InputQueue.getInstance();
+	private int flipper = 1;
 
-		inputConsole = new InputConsole(this.tetrisQueue);
-		consoleThread = new Thread(inputConsole);
-		consoleThread.start();
+	public void addLine() {
 
-		producer = new Producer(this.tetrisQueue);
-		producerThread = new Thread(producer);
-		producerThread.start();
-	}
+		moveBlock(JoyPad.DOWN);
+		if (!block.isPossibleToPut(map)) {
+			block.recoverY();
+			block.setBlockToMap(map);
+			removePerfectLine();
+			setNewBlock();
+		}
 
-	/**
-	 *  main.gameStart() == Consumer
-	 */
-	private KeyInput keyInput;
+		removePreviousFallingBlockFromMap();
 
-	private void gameStart() {
-		blockContainer = BlockContainer.getInstance();
-		setNewBlock();
+		boolean tempRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];
+		boolean bufRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 
-		block.setBlockToMap(map);
-		keyInput = new KeyInput('x');
-		renderGameBoard(setGameBoard(BlockState.FALLING));
-
-		while (true) {
-			keyInput = new KeyInput();
-
-			// polling, Consuming
-			// blocking if queue is empty
-			tetrisQueue.get(keyInput);
-
-			if (keyInput.getItem() == JoyPad.UNDEFINED) {
-				continue;
-			}
-
-			if (keyInput.getItem() == JoyPad.QUIT) {
-				break;
-			}
-
-			if (!moveBlockAndRender(keyInput.getItem())) {
-				break;
+		for (int col = 1; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+			if ((col % 2) == flipper) {
+				bufRow[col] = true;
 			}
 		}
+		// add
+		for (int row = GameProperties.HEIGHT_PLUS_HIDDEN_START - 1; row >= 0; row--) {
+			for (int col = 1; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+				tempRow[col] = map[row][col];
+			}
+
+			for (int col = 1; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
+				map[row][col] = bufRow[col];
+				bufRow[col] = tempRow[col];
+			}
+		}
+
+		flipper = 1 - flipper;
+
+		moveBlockAndRender(JoyPad.UNDEFINED); // producer 에서 sleep 이후에 tetrisQueue에 값 넣으면 InputReceiver 쪽 tetrisQueue.get 이후 로직에서 종료시킬 것임.
 	}
 
-	private void setNewBlock() {
-		int idx = blockContainer.getNextBlockId();
-		block = blockContainer.getNewBlock(idx);
-	}
-
-	private void moveBlock(JoyPad joyPad) {
-		removePreviousFallingBlockFromMap();
-		block.doKeyEvent(joyPad, map);
-	}
-
-	private boolean moveBlockAndRender(JoyPad joyPad) {
+	public boolean moveBlockAndRender(JoyPad joyPad) {
 		moveBlock(joyPad);
 
 		BlockState blockState = combineBlockToMap();
@@ -150,9 +194,19 @@ public class TetrisGame {
 			return false;
 		}
 
-		render(blockState);
+		renderErased();
+		render(blockState, joyPad);
 
 		return true; // TOUCH_DOWN, FALLING
+	}
+
+	private void moveBlock(JoyPad joyPad) {
+		removePreviousFallingBlockFromMap();
+		block.doKeyEvent(joyPad, map);
+	}
+
+	private void removePreviousFallingBlockFromMap() {
+		block.remove(map);
 	}
 
 	private BlockState combineBlockToMap() {
@@ -181,16 +235,6 @@ public class TetrisGame {
 		return blockState;
 	}
 
-	private void render(BlockState blockState) {
-		// 콘솔 화면 전체 삭제
-		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER_PLUS_INPUT));
-		renderGameBoard(setGameBoard(blockState));
-	}
-
-	private void removePreviousFallingBlockFromMap() {
-		block.remove(map);
-	}
-
 	private boolean isTouchDown() {
 		// 방향 회전 또는 이동 ==>  블럭 중심 좌표 변경
 
@@ -207,12 +251,34 @@ public class TetrisGame {
 		}
 	}
 
-	private String setGameBoard(BlockState blockState) {
+	private void setNewBlock() {
+		int idx = blockContainer.getNextBlockId();
+		block = blockContainer.getNewBlock(idx);
+	}
+
+	private void render(BlockState blockState, JoyPad joyPad) {
+		StringBuilder sb = setGameBoard();
+		sb.append(joyPad);
+		sb.append("\n");
+
+		// set futureBlock
+		if (blockState == BlockState.FALLING) {
+			block.setFutureBlockToStringBuilder(map, sb);
+		}
+
+		renderGameBoard(sb.toString());
+	}
+
+	public void renderErased() {
+		renderGameBoard(erase(GameProperties.HEIGHT_PLUS_BOTTOM_BORDER_PLUS_INPUT));
+	}
+
+	public StringBuilder setGameBoard() {
 		StringBuilder sb = new StringBuilder();
 		int lineNum = 1;
 		for (int row = GameProperties.HIDDEN_START_HEIGHT; row < GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER; row++) {
 			for (int col = 0; col < GameProperties.WIDTH_PLUS_SIDE_BORDERS; col++) {
-				if (col == 0 || col > GameProperties.WIDTH) {
+				if (col == 0 || col > GameProperties.WIDTH) { // side line
 					if (row == GameProperties.HEIGHT_PLUS_HIDDEN_START) {
 						sb.append(" ");
 					} else {
@@ -234,17 +300,11 @@ public class TetrisGame {
 				lineNum++;
 			}
 		}
-		sb.append(keyInput.getItem());
-		sb.append("\n");
 
-		// set futureBlock
-		if (blockState == BlockState.FALLING) {
-			block.setFutureBlockToStringBuilder(map, sb);
-		}
-		return sb.toString();
+		return sb;
 	}
 
-	private void removePerfectLine() {
+	public void removePerfectLine() {
 		boolean tempMap[][] = new boolean[GameProperties.HEIGHT_PLUS_HIDDEN_START_PLUS_BOTTOM_BORDER][GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 
 		int blockCount;
@@ -289,6 +349,10 @@ public class TetrisGame {
 			map[tempRow][(GameProperties.WIDTH_PLUS_SIDE_BORDERS - 1)] = true;
 			tempRow--;
 		}
+
+		if (num > 0) {
+			messageSender.sendAttackMessage();
+		}
 	}
 
 	private String erase(int rowsToErase) {
@@ -318,13 +382,29 @@ public class TetrisGame {
 		return gameBoard;
 	}
 
-	private void renderGameBoard(String gameBoard) {
+	public void renderGameBoard(String gameBoard) {
 		System.out.print(gameBoard);
 	}
 
+	public TetrisRenderImpl() {
+	}
+
+	private MessageSender messageSender;
+
+	public TetrisRenderImpl(MessageSender messageSender) {
+		this.messageSender = messageSender;
+	}
+
 	public static void main(String[] args) {
-		TetrisGame tetris = new TetrisGame();
-		tetris.start();
+		TetrisRenderImpl tetrisGameImpl = new TetrisRenderImpl();
+		tetrisGameImpl.gameStart();
+	}
+
+	@Override
+	public void run() {
+		gameStart();
+		stopRunning();
+		messageSender.resumeChatting();
 	}
 
 }

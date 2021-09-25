@@ -43,6 +43,3 @@ public class GameProperties {
 	}
 }
 
-enum BlockState {
-	FALLING, TOUCH_DOWN, TOUCH_CEIL
-}

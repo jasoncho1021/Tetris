@@ -2,19 +2,19 @@ package tetris.queue.producer.impl;
 
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
-import tetris.queue.producer.TetrisProducer;
+import tetris.queue.producer.TetrisThread;
 
-public class Producer extends TetrisProducer {
+public class Producer extends TetrisThread {
 
-	private TetrisQueue tetrisQueue;
+	private TetrisQueue<KeyInput> tetrisQueue;
 
-	public Producer(TetrisQueue tetrisQueue) {
+	public Producer(TetrisQueue<KeyInput> tetrisQueue) {
 		this.tetrisQueue = tetrisQueue;
 	}
 
 	@Override
 	public void run() {
-		startProduce();
+		startRunning();
 		while (isRunning()) {
 
 			tetrisQueue.add(new KeyInput('k'));

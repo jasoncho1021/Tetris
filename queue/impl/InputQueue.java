@@ -6,25 +6,25 @@ import java.util.Queue;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
 
-public class InputQueue implements TetrisQueue {
+public class InputQueue implements TetrisQueue<KeyInput> {
 	private Queue<KeyInput> queue;
 
 	private InputQueue() {
 		queue = new LinkedList<KeyInput>();
 	}
 
-	public static TetrisQueue getInstance() {
+	public static TetrisQueue<KeyInput> getInstance() {
 		return LazyHolder.INSTANCE;
 	}
 
 	private static class LazyHolder {
-		private static final TetrisQueue INSTANCE = new InputQueue();
+		private static final TetrisQueue<KeyInput> INSTANCE = new InputQueue();
 	}
 
 	@Override
-	public void add(KeyInput keyInput) {
+	public void add(KeyInput input) {
 		synchronized (this) {
-			queue.offer(keyInput);
+			queue.offer(input);
 			notifyAll();
 		}
 	}
@@ -34,7 +34,7 @@ public class InputQueue implements TetrisQueue {
 		KeyInput queueInput;
 		synchronized (this) {
 			// blocking
-			if (queue.isEmpty()) {
+			while (queue.isEmpty()) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
@@ -43,8 +43,7 @@ public class InputQueue implements TetrisQueue {
 			}
 
 			queueInput = queue.poll();
-			keyOutput.joyPad = queueInput.joyPad;
-			notifyAll();
+			keyOutput.setItem(queueInput.getItem());
 		}
 	}
 

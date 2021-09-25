@@ -6,15 +6,15 @@ import java.io.InputStream;
 
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
-import tetris.queue.producer.TetrisProducer;
+import tetris.queue.producer.TetrisThread;
 
-public class InputConsole extends TetrisProducer {
+public class InputConsole extends TetrisThread {
 
 	private String ttyConfig;
 
-	private TetrisQueue tetrisQueue;
+	private TetrisQueue<KeyInput> tetrisQueue;
 
-	public InputConsole(TetrisQueue tetrisQueue) {
+	public InputConsole(TetrisQueue<KeyInput> tetrisQueue) {
 		this.tetrisQueue = tetrisQueue;
 	}
 
@@ -23,8 +23,8 @@ public class InputConsole extends TetrisProducer {
 			setTerminalToCBreak();
 
 			while (isRunning()) { // polling with non-blocking syscall
-				if (System.in.available() != 0) { // non-blocking
-					tetrisQueue.add(new KeyInput((char) System.in.read())); // blocking
+				if (System.in.available() != 0) { // avoid calling blocking syscall by using non-blocking syscall as a condition
+					tetrisQueue.add(new KeyInput((char) System.in.read())); // System.in.read() is blocking
 				}
 			}
 		} catch (IOException e) {
@@ -90,7 +90,7 @@ public class InputConsole extends TetrisProducer {
 
 	@Override
 	public void run() {
-		startProduce();
+		startRunning();
 		listenKey();
 		System.out.println("console end");
 	}
