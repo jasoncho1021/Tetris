@@ -12,7 +12,6 @@ import tetris.JoyPad;
 import tetris.TetrisRender;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
-import tetris.queue.impl.InputQueue;
 import tetris.queue.producer.TetrisThread;
 import tetris.queue.producer.impl.Producer;
 
@@ -84,7 +83,7 @@ public class ServerInputReceiver extends TetrisThread {
 	}
 
 	private void initInputListener() {
-		tetrisQueue = InputQueue.getInstance();
+		tetrisQueue = new ServerTetrisQueueImpl();
 
 		producer = new Producer(tetrisQueue);
 		producerThread = new Thread(producer);

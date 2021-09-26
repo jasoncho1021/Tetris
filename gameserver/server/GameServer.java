@@ -8,11 +8,18 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import tetris.JobCallBack;
+import tetris.queue.TetrisQueue;
+import tetris.queue.producer.TetrisThread;
 
 public class GameServer {
 	public static final String START = "START";
@@ -23,8 +30,13 @@ public class GameServer {
 
 	private HashMap<String, DataOutputStream> clients;
 
-	private Logger logger = LoggerFactory.getLogger(this.getClass());
+	private TetrisQueue<AttackerId> attackRequestQueue = AttackRequestQueue.getInstace();
+	private AtomicInteger uniqueId = new AtomicInteger(0);
+	private HashMap<Integer, ServerTetrisRender> games;
 
+	private Set<Integer> readySet = new HashSet();
+
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
 	{
 		// Get the process id
 		String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("@.*", "");
@@ -35,11 +47,16 @@ public class GameServer {
 	GameServer() {
 		clients = new HashMap<>();
 		Collections.synchronizedMap(clients);
+
+		games = new HashMap<>();
+		Collections.synchronizedMap(games); // ServerReceiver thread 에서 접근하기 때문에 
 	}
 
-	public void start() {
+	public void accept() {
 		ServerSocket serverSocket = null;
 		Socket socket = null;
+
+		AttackListener attackListener = null;
 		try {
 			serverSocket = new ServerSocket(7777);
 			System.out.println("서버가 시작되었습니다.");
@@ -48,6 +65,12 @@ public class GameServer {
 				System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "]" + "에서 접속하였습니다.");
 				ServerReceiver thread = new ServerReceiver(socket);
 				thread.start();
+
+				if (attackListener == null) {
+					attackListener = new AttackListener();
+					Thread attackListenerThread = new Thread(attackListener);
+					attackListenerThread.start();
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -62,25 +85,74 @@ public class GameServer {
 				out.writeUTF(msg);
 			} catch (IOException e) {
 			}
-		} // while
-	} // sendToAll
+		}
+	}
+
+	void startGame() {
+		ServerTetrisRender tetris;
+		Iterator<Integer> it = games.keySet().iterator();
+		while (it.hasNext()) {
+			Integer userId = it.next();
+			tetris = games.get(userId);
+			tetris.startRunning();
+			Thread tetrisThread = new Thread(tetris);
+			tetrisThread.start();
+		}
+	}
 
 	public static void main(String args[]) {
-		new GameServer().start();
+		new GameServer().accept();
+	}
+
+	private class AttackListener extends TetrisThread {
+		private AttackerId output = new AttackerId();
+		private Iterator<Integer> it;
+		private ServerTetrisRender tetris;
+
+		@Override
+		public void run() {
+			startRunning();
+			while (isRunning()) {
+				attackRequestQueue.get(output);
+
+				it = games.keySet().iterator();
+				while (it.hasNext()) {
+					Integer userId = it.next();
+					if (userId.equals(output.getItem())) {
+						continue;
+					}
+
+					tetris = games.get(userId);
+					tetris.addJob(new JobCallBack() {
+						@Override
+						public void doJob() {
+							tetris.addLine();
+						}
+					});
+				}
+
+			}
+		}
 	}
 
 	class ServerReceiver extends Thread {
-		Socket socket;
-		DataInputStream in;
-		DataOutputStream out;
+		private Socket socket;
+		private DataInputStream in;
+		private DataOutputStream out;
 		private ServerTetrisRender tetris;
+		private Integer userId;
 
 		ServerReceiver(Socket socket) {
 			this.socket = socket;
 			try {
 				in = new DataInputStream(socket.getInputStream());
 				out = new DataOutputStream(socket.getOutputStream());
-				tetris = new ServerTetrisRenderImpl(out);
+
+				userId = uniqueId.getAndIncrement();
+				tetris = new ServerTetrisRenderImpl(out, userId, attackRequestQueue);
+
+				games.put(userId, tetris);
+
 			} catch (IOException e) {
 			}
 		}
@@ -95,7 +167,6 @@ public class GameServer {
 
 				String nameMsg = "";
 				String msg = "";
-				Thread tetrisThread = null;
 				while (in != null) {
 					nameMsg = in.readUTF();
 					System.out.println("full:" + nameMsg);
@@ -108,17 +179,28 @@ public class GameServer {
 						tetris.addInput(input);
 					} else {
 						if (msg.equalsIgnoreCase(READY)) {
-							out.writeUTF(START);
 
-							tetrisThread = new Thread(tetris);
-							tetris.startRunning();
-							tetrisThread.start();
+							readySet.add(userId);
+
+							if (readySet.size() == games.size()) {
+								sendToAll(START);
+								startGame();
+								/*	
+								 * out.writeUTF(START);
+								
+									tetrisThread = new Thread(tetris);
+									tetris.startRunning();
+									tetrisThread.start();
+								*/
+								readySet.clear();
+								continue;
+							}
+						}
+
+						if (!tetris.isGameOver()) {
 							continue;
 						}
 
-						if (tetrisThread != null && tetrisThread.isAlive()) {
-							continue;
-						}
 						sendToAll("ss:" + nameMsg);
 					}
 				}

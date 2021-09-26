@@ -157,9 +157,12 @@ public class TetrisRenderImpl extends TetrisRender {
 			block.setBlockToMap(map);
 			removePerfectLine();
 			setNewBlock();
+		} else {
+			// possible to falling
+			block.recoverY();
 		}
 
-		removePreviousFallingBlockFromMap();
+		removePreviousFallingBlockFromMap(); // remove newBlock or fallingBlock
 
 		boolean tempRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];
 		boolean bufRow[] = new boolean[GameProperties.WIDTH_PLUS_SIDE_BORDERS];

@@ -17,8 +17,8 @@ import tetris.block.BlockState;
 import tetris.block.container.BlockContainer;
 import tetris.jobqueue.JobInput;
 import tetris.jobqueue.JobQueue;
-import tetris.jobqueue.JobQueueImpl;
 import tetris.queue.KeyInput;
+import tetris.queue.TetrisQueue;
 
 /**
  * ubuntu bash 창에서 play 가능합니다.
@@ -52,10 +52,16 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	private boolean map[][];
 	private BlockMovement block;
 	private BlockContainer blockContainer;
-	private JobQueue<JobInput> jobQueue = JobQueueImpl.getInstance();
+	private JobQueue<JobInput> jobQueue;
 	private ServerInputReceiver serverInputReceiver;
 
 	private volatile boolean isRunning;
+
+	private volatile boolean isEnd = true;
+
+	public boolean isGameOver() {
+		return isEnd;
+	}
 
 	public void startRunning() {
 		this.isRunning = true;
@@ -72,7 +78,10 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	public void gameStart() {
 
 		logger.debug("gameStart");
+
+		jobQueue = new ServerJobQueueImpl();
 		Thread serverInputReceiverThread = null;
+		isEnd = false;
 
 		try {
 			blockContainer = BlockContainer.getInstance();
@@ -154,13 +163,14 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	private int flipper = 1;
 
 	public void addLine() {
-
 		moveBlock(JoyPad.DOWN);
 		if (!block.isPossibleToPut(map)) {
 			block.recoverY();
 			block.setBlockToMap(map);
 			removePerfectLine();
 			setNewBlock();
+		} else {
+			block.recoverY();
 		}
 
 		removePreviousFallingBlockFromMap();
@@ -351,6 +361,7 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 
 		if (num > 0) {
 			//messageSender.sendAttackMessage();
+			attackRequestQueue.add(new AttackerId(userId));
 		}
 	}
 
@@ -367,9 +378,13 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	}
 
 	private DataOutputStream out;
+	private Integer userId;
+	private TetrisQueue<AttackerId> attackRequestQueue;
 
-	public ServerTetrisRenderImpl(DataOutputStream out) {
+	public ServerTetrisRenderImpl(DataOutputStream out, Integer userId, TetrisQueue<AttackerId> attackRequestQueue) {
 		this.out = out;
+		this.userId = userId;
+		this.attackRequestQueue = attackRequestQueue;
 	}
 
 	public static void main(String[] args) {
@@ -385,6 +400,7 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 		try {
 			out.writeUTF(GameServer.GAMEOVER);
 			Thread.sleep(200);
+			isEnd = true;
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 		}
