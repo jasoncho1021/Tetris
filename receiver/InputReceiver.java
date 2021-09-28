@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tetris.GameException;
-import tetris.JobCallBack;
 import tetris.JoyPad;
 import tetris.TetrisRender;
 import tetris.queue.KeyInput;
@@ -68,7 +67,7 @@ public class InputReceiver extends TetrisThread {
 			}
 
 			if (isRunning()) {
-				tetrisRender.addJob(new JobCallBack() {
+				/*tetrisRender.addJob(new JobCallBack() {
 					@Override
 					public void doJob() {
 						//logger.debug("addJob: moveBlockAndRender");
@@ -79,6 +78,14 @@ public class InputReceiver extends TetrisThread {
 							stopRunning();
 							//tetrisRender.finishJob();
 						}
+					}
+				});*/
+				tetrisRender.addMoveBlockJob(joyPad, new InputReceiverCallBack() {
+					@Override
+					public void doCallBack() {
+						logger.debug("ceil");
+						tetrisQueue.add(new KeyInput('z')); // 천장 닿아서 종료 
+						stopRunning();
 					}
 				});
 			}

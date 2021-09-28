@@ -17,7 +17,6 @@ import org.apache.log4j.MDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import tetris.JobCallBack;
 import tetris.queue.TetrisQueue;
 import tetris.queue.producer.TetrisThread;
 
@@ -34,7 +33,7 @@ public class GameServer {
 	private AtomicInteger uniqueId = new AtomicInteger(0);
 	private HashMap<Integer, ServerTetrisRender> games;
 
-	private Set<Integer> readySet = new HashSet();
+	private Set<Integer> readySet = new HashSet<Integer>();
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 	{
@@ -75,7 +74,7 @@ public class GameServer {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-	} // start()
+	}
 
 	void sendToAll(String msg) {
 		Iterator<String> it = clients.keySet().iterator();
@@ -123,12 +122,14 @@ public class GameServer {
 					}
 
 					tetris = games.get(userId);
-					tetris.addJob(new JobCallBack() {
+					/*tetris.addJob(new JobCallBack() {
 						@Override
 						public void doJob() {
+							//마지막 애가 되나보다...레퍼련스 참조라서..
 							tetris.addLine();
 						}
-					});
+					});*/
+					tetris.addLineJob();
 				}
 
 			}
@@ -157,11 +158,37 @@ public class GameServer {
 			}
 		}
 
+		private boolean processChattingMessage(String nameMsg, String msg) {
+			if (msg.equals(QUIT)) {
+				return false;
+			}
+
+			if (msg.equalsIgnoreCase(READY)) {
+				readySet.add(userId);
+
+				if (readySet.size() == games.size()) {
+					sendToAll(START);
+					startGame();
+					readySet.clear();
+					return true;
+				}
+			}
+
+			// discard the keep pressed input after game over
+			if (!tetris.isGameOver()) {
+				return true;
+			}
+
+			sendToAll("ss:" + nameMsg);
+			return true;
+		}
+
 		public void run() {
 			String name = "";
 			try {
 				name = in.readUTF();
 				sendToAll("#" + name + "님이 들어오셨습니다.");
+
 				clients.put(name, out);
 				System.out.println("현재 서버접속자 수는 " + clients.size() + "입니다.");
 
@@ -169,49 +196,32 @@ public class GameServer {
 				String msg = "";
 				while (in != null) {
 					nameMsg = in.readUTF();
-					System.out.println("full:" + nameMsg);
-
 					msg = nameMsg.substring(nameMsg.indexOf("]") + 1);
-					System.out.println(msg);
 
 					if (tetris.isRunning()) {
 						Character input = msg.charAt(0);
 						tetris.addInput(input);
-					} else {
-						if (msg.equalsIgnoreCase(READY)) {
+						continue;
+					}
 
-							readySet.add(userId);
-
-							if (readySet.size() == games.size()) {
-								sendToAll(START);
-								startGame();
-								/*	
-								 * out.writeUTF(START);
-								
-									tetrisThread = new Thread(tetris);
-									tetris.startRunning();
-									tetrisThread.start();
-								*/
-								readySet.clear();
-								continue;
-							}
-						}
-
-						if (!tetris.isGameOver()) {
-							continue;
-						}
-
-						sendToAll("ss:" + nameMsg);
+					if (!processChattingMessage(nameMsg, msg)) {
+						break;
 					}
 				}
 			} catch (IOException e) {
-				// ignore
+
 			} finally {
 				sendToAll("#" + name + "님이 나가셨습니다.");
+				try {
+					out.writeUTF(QUIT);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 				clients.remove(name);
+				games.remove(userId);
 				System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "]" + "에서 접속을 종료하였습니다.");
 				System.out.println("현재 서버접속자 수는 " + clients.size() + "입니다.");
-			} // try
-		} // run
-	} // ReceiverThread
+			}
+		}
+	}
 }

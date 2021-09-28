@@ -19,6 +19,7 @@ import tetris.jobqueue.JobInput;
 import tetris.jobqueue.JobQueue;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
+import tetris.receiver.InputReceiverCallBack;
 
 /**
  * ubuntu bash 창에서 play 가능합니다.
@@ -82,6 +83,7 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 		jobQueue = new ServerJobQueueImpl();
 		Thread serverInputReceiverThread = null;
 		isEnd = false;
+		flipper = 1;
 
 		try {
 			blockContainer = BlockContainer.getInstance();
@@ -106,7 +108,6 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 			JobInput jobInput;
 			while (isRunning()) {
 				jobInput = new JobInput();
-				//logger.debug("get blocked");
 				jobQueue.get(jobInput); // blocking,,until inputReceiver addJob or Attack addJob
 				doJobCallBack(jobInput.getItem());
 			}
@@ -132,8 +133,29 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 		serverInputReceiver.addInput(input);
 	}
 
-	public void addJob(JobCallBack jobCallBack) {
+	private void addJob(JobCallBack jobCallBack) {
 		jobQueue.add(new JobInput(jobCallBack));
+	}
+
+	public void addMoveBlockJob(JoyPad joyPad, InputReceiverCallBack callBack) {
+		addJob(new JobCallBack() {
+			@Override
+			public void doJob() {
+				if (!moveBlockAndRender(joyPad)) {
+					callBack.doCallBack();
+					stopRunning();
+				}
+			}
+		});
+	}
+
+	public void addLineJob() {
+		addJob(new JobCallBack() {
+			@Override
+			public void doJob() {
+				addLine();
+			}
+		});
 	}
 
 	public void finishJob() {
@@ -141,7 +163,6 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	}
 
 	private void doJobCallBack(JobCallBack jobCallBack) {
-		//logger.debug("do job callback");
 		jobCallBack.doJob();
 	}
 
@@ -160,9 +181,9 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 		}
 	}
 
-	private int flipper = 1;
+	private int flipper;
 
-	public void addLine() {
+	private void addLine() {
 		moveBlock(JoyPad.DOWN);
 		if (!block.isPossibleToPut(map)) {
 			block.recoverY();
@@ -360,7 +381,6 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 		}
 
 		if (num > 0) {
-			//messageSender.sendAttackMessage();
 			attackRequestQueue.add(new AttackerId(userId));
 		}
 	}

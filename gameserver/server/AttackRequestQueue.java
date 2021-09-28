@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import tetris.queue.TetrisQueue;
 
-public class AttackRequestQueue implements TetrisQueue<AttackerId> {
+public class AttackRequestQueue implements AttackReqQueue<AttackerId> {
 	private Queue<AttackerId> queue;
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 	{
@@ -58,6 +58,11 @@ public class AttackRequestQueue implements TetrisQueue<AttackerId> {
 		logger.debug("get");
 		queueOutput = queue.poll();
 		output.setItem(queueOutput.getItem());
+	}
+
+	@Override
+	public synchronized void init() {
+		queue.clear();
 	}
 
 }

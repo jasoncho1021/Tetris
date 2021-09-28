@@ -18,6 +18,7 @@ import tetris.jobqueue.JobQueueImpl;
 import tetris.network.client.MessageSender;
 import tetris.queue.KeyInput;
 import tetris.receiver.InputReceiver;
+import tetris.receiver.InputReceiverCallBack;
 
 /**
  * ubuntu bash 창에서 play 가능합니다.
@@ -71,6 +72,7 @@ public class TetrisRenderImpl extends TetrisRender {
 		InputReceiver inputReceiver;
 		Thread inputReceiverThread = null;
 		logger.debug("gameStart");
+		flipper = 1;
 
 		try {
 			blockContainer = BlockContainer.getInstance();
@@ -119,8 +121,28 @@ public class TetrisRenderImpl extends TetrisRender {
 
 	}
 
-	public void addJob(JobCallBack jobCallBack) {
+	private void addJob(JobCallBack jobCallBack) {
 		jobQueue.add(new JobInput(jobCallBack));
+	}
+
+	public void addMoveBlockJob(JoyPad joyPad, InputReceiverCallBack callBack) {
+		addJob(new JobCallBack() {
+			@Override
+			public void doJob() {
+				if (!moveBlockAndRender(joyPad)) {
+					callBack.doCallBack();
+				}
+			}
+		});
+	}
+
+	public void addLineJob() {
+		addJob(new JobCallBack() {
+			@Override
+			public void doJob() {
+				addLine();
+			}
+		});
 	}
 
 	public void finishJob() {
@@ -147,10 +169,9 @@ public class TetrisRenderImpl extends TetrisRender {
 		}
 	}
 
-	private int flipper = 1;
+	private int flipper;
 
-	public void addLine() {
-
+	private void addLine() {
 		moveBlock(JoyPad.DOWN);
 		if (!block.isPossibleToPut(map)) {
 			block.recoverY();

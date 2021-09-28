@@ -7,13 +7,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tetris.GameException;
-import tetris.JobCallBack;
 import tetris.JoyPad;
 import tetris.TetrisRender;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
 import tetris.queue.producer.TetrisThread;
 import tetris.queue.producer.impl.Producer;
+import tetris.receiver.InputReceiverCallBack;
 
 public class ServerInputReceiver extends TetrisThread {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -65,17 +65,12 @@ public class ServerInputReceiver extends TetrisThread {
 			}
 
 			if (isRunning()) {
-				tetrisRender.addJob(new JobCallBack() {
+				tetrisRender.addMoveBlockJob(joyPad, new InputReceiverCallBack() {
 					@Override
-					public void doJob() {
-						//logger.debug("addJob: moveBlockAndRender");
-						if (!tetrisRender.moveBlockAndRender(joyPad)) {
-							logger.debug("ceil");
-							tetrisQueue.add(new KeyInput('z')); // 천장 닿아서 종료
-							// joyPad == JoyPad.QUIT 으로 
-							tetrisRender.stopRunning();
-							stopRunning();
-						}
+					public void doCallBack() {
+						logger.debug("ceil");
+						tetrisQueue.add(new KeyInput('z')); // 천장 닿아서 종료 
+						stopRunning();
 					}
 				});
 			}
