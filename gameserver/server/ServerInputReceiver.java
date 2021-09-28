@@ -1,4 +1,4 @@
-package tetris.receiver;
+package tetris.gameserver.server;
 
 import java.lang.management.ManagementFactory;
 
@@ -11,12 +11,11 @@ import tetris.JoyPad;
 import tetris.TetrisRender;
 import tetris.queue.KeyInput;
 import tetris.queue.TetrisQueue;
-import tetris.queue.impl.InputQueue;
 import tetris.queue.producer.TetrisThread;
-import tetris.queue.producer.impl.InputConsole;
 import tetris.queue.producer.impl.Producer;
+import tetris.receiver.InputReceiverCallBack;
 
-public class InputReceiver extends TetrisThread {
+public class ServerInputReceiver extends TetrisThread {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	{
@@ -26,14 +25,12 @@ public class InputReceiver extends TetrisThread {
 		MDC.put("PID", pid);
 	}
 
-	private TetrisThread inputConsole;
 	private TetrisThread producer;
-	private Thread consoleThread;
 	private Thread producerThread;
 	private TetrisQueue<KeyInput> tetrisQueue;
 	private TetrisRender tetrisRender;
 
-	public InputReceiver(TetrisRender tetrisRender) {
+	public ServerInputReceiver(TetrisRender tetrisRender) {
 		this.tetrisRender = tetrisRender;
 		startRunning();
 	}
@@ -60,26 +57,14 @@ public class InputReceiver extends TetrisThread {
 				*/
 				logger.debug("break");
 				if (isRunning()) {
-					stopRunning();
+					tetrisRender.stopRunning();
 					tetrisRender.finishJob();
+					stopRunning();
 				}
 				return;
 			}
 
 			if (isRunning()) {
-				/*tetrisRender.addJob(new JobCallBack() {
-					@Override
-					public void doJob() {
-						//logger.debug("addJob: moveBlockAndRender");
-						if (!tetrisRender.moveBlockAndRender(joyPad)) {
-							logger.debug("ceil");
-							tetrisQueue.add(new KeyInput('z')); // 천장 닿아서 종료
-							// joyPad == JoyPad.QUIT 으로 
-							stopRunning();
-							//tetrisRender.finishJob();
-						}
-					}
-				});*/
 				tetrisRender.addMoveBlockJob(joyPad, new InputReceiverCallBack() {
 					@Override
 					public void doCallBack() {
@@ -93,15 +78,15 @@ public class InputReceiver extends TetrisThread {
 	}
 
 	private void initInputListener() {
-		tetrisQueue = InputQueue.getInstance();
-
-		inputConsole = new InputConsole(tetrisQueue);
-		consoleThread = new Thread(inputConsole);
-		consoleThread.start();
+		tetrisQueue = new ServerTetrisQueueImpl();
 
 		producer = new Producer(tetrisQueue);
 		producerThread = new Thread(producer);
 		producerThread.start();
+	}
+
+	public void addInput(Character input) {
+		tetrisQueue.add(new KeyInput(input));
 	}
 
 	@Override
@@ -112,16 +97,11 @@ public class InputReceiver extends TetrisThread {
 			e.printGameExceptionStack();
 		} finally {
 			logger.debug("finally");
-			inputConsole.stopRunning();
 
 			producer.stopRunning();
 			producerThread.interrupt();
 
 			try {
-				if (consoleThread != null) {
-					consoleThread.join();
-					logger.debug("console join");
-				}
 
 				if (producerThread != null) {
 					producerThread.join();

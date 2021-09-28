@@ -1,21 +1,17 @@
 package tetris;
 
 import tetris.queue.producer.TetrisThread;
+import tetris.receiver.InputReceiverCallBack;
 
 public abstract class TetrisRender extends TetrisThread {
-	// for InputReceiver
-	public boolean moveBlockAndRender(JoyPad joyPad) {
-		return false;
-	}
 
-	// for Client
-	public void addJob(JobCallBack jobCallBack) {
+	public void addMoveBlockJob(JoyPad joyPad, InputReceiverCallBack callBack) {
 	}
 
 	public void gameStart() {
 	}
 
-	public void addLine() {
+	public void addLineJob() {
 	}
 
 	public void finishJob() {

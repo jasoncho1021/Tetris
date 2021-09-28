@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tetris.GameException;
-import tetris.JobCallBack;
 import tetris.TetrisRender;
 import tetris.TetrisRenderImpl;
 
@@ -60,14 +59,7 @@ public class Client {
 					buf.clear();
 
 					if (ATTACK.equalsIgnoreCase(keyWord)) {
-
-						tetris.addJob(new JobCallBack() {
-							@Override
-							public void doJob() {
-								//logger.debug("addJob: add Line");
-								tetris.addLine();
-							}
-						});
+						tetris.addLineJob();
 					}
 					continue;
 				} else {

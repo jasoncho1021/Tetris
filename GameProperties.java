@@ -25,7 +25,7 @@ public class GameProperties {
 	private static final int SIDE_BORDERS = 2;
 	private static final int HEIGHT = 20;
 
-	static final int WIDTH = 12;
+	public static final int WIDTH = 12;
 
 	public static final int HIDDEN_START_HEIGHT = 2;
 	public static final int HEIGHT_PLUS_BOTTOM_BORDER = HEIGHT + BOTTOM_BORDER;
