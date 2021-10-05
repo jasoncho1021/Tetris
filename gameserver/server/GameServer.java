@@ -147,8 +147,6 @@ public class GameServer {
 
 				games.put(userId, tetris);
 
-				clients.put(userId + "", out);
-
 			} catch (IOException e) {
 			}
 		}
@@ -183,8 +181,6 @@ public class GameServer {
 			try {
 				name = in.readUTF();
 				sendToAll("#" + name + "님이 들어오셨습니다.");
-
-				clients.remove(userId + "");
 
 				clients.put(name, out);
 				System.out.println("현재 서버접속자 수는 " + clients.size() + "입니다.");

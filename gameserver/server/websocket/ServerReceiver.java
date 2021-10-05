@@ -30,9 +30,9 @@ public class ServerReceiver extends Thread {
 			name = messageConverter.read();
 			sendToAll("#" + name + "님이 들어오셨습니다.");
 
-			ControlTower.clients.remove(userId + "");
+			//ControlTower.clients.remove(userId + "");
+			//ControlTower.clients.put(name, messageConverter);
 
-			ControlTower.clients.put(name, messageConverter);
 			System.out.println("현재 서버접속자 수는 " + ControlTower.clients.size() + "입니다.");
 
 			String nameMsg = "";
@@ -58,7 +58,8 @@ public class ServerReceiver extends Thread {
 		} finally {
 			messageConverter.close();
 
-			ControlTower.clients.remove(name);
+			//ControlTower.clients.remove(name);
+			ControlTower.clients.remove(userId + "");
 			ControlTower.games.remove(userId);
 
 			sendToAll("#" + name + "님이 나가셨습니다.");
