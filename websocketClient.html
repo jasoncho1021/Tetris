@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <input type="text" placeholder="보낼 메세지를 입력하세요." class="content" onkeydown="sendChat(this)">
+<div>
+    <span>--메세지--</span>
+    <div class="msgArea"></div>
+    <span>---게임---</span>
+    <pre></pre>
+</div>
+</body>
+<script>
+        let socket = new WebSocket("ws://localhost:8099");
+        
+        socket.onopen = function (e) {
+            console.log('open server!')
+            socket.send("wsClient");
+        }; 
+
+        socket.onerror = function (e){
+            console.log(e);
+        }
+        
+        let gameStart = false;
+        socket.onmessage = function (e) {
+            console.log(e.data);
+            if(e.data === "START") {
+                gameStart = true;
+            } else if (e.data === "GAMEOVER"){
+                gameStart = false;
+            }
+
+            if(gameStart) {
+                document.querySelector('pre').innerText = e.data;
+                return;
+            }
+
+            let msgArea = document.querySelector('.msgArea');
+            let newMsg = document.createElement('div');
+            newMsg.innerText = e.data;
+            msgArea.append(newMsg);
+        }
+
+        function sendChat(target) {
+            var key = event.keyCode;
+            let input = String.fromCharCode(event.keyCode).toLowerCase();
+            if(gameStart) {
+                console.log("keydowninput: " + input);
+                if(input.length > 0) {
+                    socket.send(input);
+                   target.value = "";    
+                }
+            } else {
+                if(13 == key) {
+                    console.log("send: " + target.value);
+                    socket.send("[wsClient]"+target.value);
+                    target.value = "";    
+                }
+            }
+        }
+
+        
+</script>
+</html>

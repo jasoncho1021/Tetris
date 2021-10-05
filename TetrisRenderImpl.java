@@ -106,7 +106,7 @@ public class TetrisRenderImpl extends TetrisRender {
 			logger.debug("inputReceiver.isRunning() : " + inputReceiver.isRunning());
 
 		} catch (GameException e) {
-			e.printGameExceptionStack();
+			e.printStackTrace();
 			logger.debug("game exception");
 		} finally {
 			try {

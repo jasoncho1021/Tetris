@@ -122,13 +122,6 @@ public class GameServer {
 					}
 
 					tetris = games.get(userId);
-					/*tetris.addJob(new JobCallBack() {
-						@Override
-						public void doJob() {
-							//마지막 애가 되나보다...레퍼련스 참조라서..
-							tetris.addLine();
-						}
-					});*/
 					tetris.addLineJob();
 				}
 
@@ -153,6 +146,8 @@ public class GameServer {
 				tetris = new ServerTetrisRenderImpl(out, userId, attackRequestQueue);
 
 				games.put(userId, tetris);
+
+				clients.put(userId + "", out);
 
 			} catch (IOException e) {
 			}
@@ -188,6 +183,8 @@ public class GameServer {
 			try {
 				name = in.readUTF();
 				sendToAll("#" + name + "님이 들어오셨습니다.");
+
+				clients.remove(userId + "");
 
 				clients.put(name, out);
 				System.out.println("현재 서버접속자 수는 " + clients.size() + "입니다.");

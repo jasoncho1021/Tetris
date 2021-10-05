@@ -120,11 +120,6 @@ public class TetrisServer {
 							System.out.print(enter);
 							inputBuf.clear();
 
-							/*							outputBuf.put("START@".getBytes());
-														outputBuf.flip();
-														readSocket.write(outputBuf);
-														outputBuf.clear();
-							*/
 							readyClientID.add(info.getID());
 							if (readyClientID.size() == allClient.size()) {
 								outputBuf.put("START@".getBytes());

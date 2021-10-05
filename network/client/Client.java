@@ -18,7 +18,6 @@ import tetris.TetrisRenderImpl;
 
 public class Client {
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
-
 	{
 		// Get the process id
 		String pid = ManagementFactory.getRuntimeMXBean().getName().replaceAll("@.*", "");

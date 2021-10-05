@@ -231,11 +231,12 @@ public class GameClient {
 					} else if (msg.equalsIgnoreCase(GameServer.GAMEOVER)) {
 						consoleListener.stopRunning();
 						clientSender.resumeChatting();
+
+						System.out.println(GameServer.GAMEOVER);
 					} else if (msg.equals(GameServer.QUIT)) {
 						System.out.println(msg);
 						break;
 					} else {
-						// print chatting
 						// print gameBoard
 						if (clientSender.isChattingPasued()) {
 							if (!first) {
@@ -245,6 +246,7 @@ public class GameClient {
 							first = false;
 							continue;
 						}
+						//print chatting
 						System.out.println(msg);
 					}
 

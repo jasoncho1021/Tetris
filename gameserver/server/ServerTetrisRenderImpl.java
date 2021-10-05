@@ -15,6 +15,7 @@ import tetris.JoyPad;
 import tetris.block.BlockMovement;
 import tetris.block.BlockState;
 import tetris.block.container.BlockContainer;
+import tetris.gameserver.server.websocket.MessageConverter;
 import tetris.jobqueue.JobInput;
 import tetris.jobqueue.JobQueue;
 import tetris.queue.KeyInput;
@@ -115,7 +116,7 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 			jobQueue.init();
 
 		} catch (GameException e) {
-			e.printGameExceptionStack();
+			e.printStackTrace();
 			logger.debug("game exception");
 		} finally {
 			try {
@@ -388,6 +389,10 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	public void renderGameBoard(String gameBoard) {
 		//System.out.print(gameBoard);
 		try {
+			if (messageConverter != null) {
+				messageConverter.write(gameBoard);
+				return;
+			}
 			out.writeUTF(gameBoard);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -397,9 +402,17 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	public ServerTetrisRenderImpl() {
 	}
 
+	private MessageConverter messageConverter;
 	private DataOutputStream out;
 	private Integer userId;
 	private TetrisQueue<AttackerId> attackRequestQueue;
+
+	public ServerTetrisRenderImpl(MessageConverter messagConverter, Integer userId,
+			TetrisQueue<AttackerId> attackRequestQueue) {
+		this.messageConverter = messagConverter;
+		this.userId = userId;
+		this.attackRequestQueue = attackRequestQueue;
+	}
 
 	public ServerTetrisRenderImpl(DataOutputStream out, Integer userId, TetrisQueue<AttackerId> attackRequestQueue) {
 		this.out = out;
@@ -415,10 +428,14 @@ public class ServerTetrisRenderImpl extends ServerTetrisRender {
 	@Override
 	public void run() {
 		gameStart();
-		//stopRunning();
 		logger.debug("render end");
 		try {
-			out.writeUTF(GameServer.GAMEOVER);
+			if (messageConverter != null) {
+				messageConverter.write(GameServer.GAMEOVER);
+			} else {
+				out.writeUTF(GameServer.GAMEOVER);
+			}
+
 			Thread.sleep(200);
 			isEnd = true;
 		} catch (IOException | InterruptedException e) {
