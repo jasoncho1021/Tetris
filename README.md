@@ -43,4 +43,6 @@ Java NIO server
 ## [v3.0] 멀티플레이 요구사항 (서버에서 게임 로직 처리)  
 완료  
 ## [v3.1] WebSocket 서버  
-client html,js 코드 까지 구현 및 추가 완료    
+WebSocket 응답 서버 구현 완료   
+client html,js 코드 구현 완료    
+채팅 및 게임 플레이 정상 동작 확인 완료  
