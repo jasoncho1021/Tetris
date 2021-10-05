@@ -46,4 +46,5 @@ Java NIO server
 WebSocket 응답 서버 구현 완료   
 client html,js 코드 구현 완료    
 채팅 및 게임 플레이 정상 동작 확인 완료  
-![ttris](https://user-images.githubusercontent.com/12610035/136025371-ce5cee9e-9ee4-4c3e-89a5-6ed782b3b6a6.gif)  
+![ttris22](https://user-images.githubusercontent.com/12610035/136033620-45d1f3dd-ceec-4dfa-86e9-c26c29c1d77b.gif)
+
