@@ -51,7 +51,7 @@ public class TetrisGame {
 			initInputListener();
 			gameStart();
 		} catch (GameException e) {
-			e.printGameExceptionStack();
+			e.printStackTrace();
 		} finally {
 			inputConsole.stopRunning();
 

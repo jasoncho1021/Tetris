@@ -122,13 +122,6 @@ public class GameServer {
 					}
 
 					tetris = games.get(userId);
-					/*tetris.addJob(new JobCallBack() {
-						@Override
-						public void doJob() {
-							//마지막 애가 되나보다...레퍼련스 참조라서..
-							tetris.addLine();
-						}
-					});*/
 					tetris.addLineJob();
 				}
 

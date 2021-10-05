@@ -109,7 +109,7 @@ public class InputReceiver extends TetrisThread {
 		try {
 			gameStart();
 		} catch (GameException e) {
-			e.printGameExceptionStack();
+			e.printStackTrace();
 		} finally {
 			logger.debug("finally");
 			inputConsole.stopRunning();

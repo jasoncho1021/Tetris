@@ -3,6 +3,7 @@ package tetris;
 public class GameException extends RuntimeException {
 
 	private Exception e;
+	private String msg;
 	/**
 	 * 
 	 */
@@ -12,9 +13,19 @@ public class GameException extends RuntimeException {
 		this.e = e;
 	}
 
-	public void printGameExceptionStack() {
-		//e.printStackTrace();
-		System.out.println("GameException occured:" + e.getMessage());
+	public GameException(String msg) {
+		this.msg = msg;
+	}
+
+	@Override
+	public void printStackTrace() {
+		String emsg = "GameException occured: ";
+		if (e != null) {
+			emsg += e.getMessage();
+		} else {
+			emsg += msg;
+		}
+		System.out.println(emsg);
 	}
 
 }
