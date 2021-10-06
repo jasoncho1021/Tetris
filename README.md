@@ -41,7 +41,7 @@ Java NIO server
 2-3. Job 큐 구현하여 멀티스레드 요청 Job 순서대로 처리 ( Job : 서버로부터 수신한 한줄 깔기 명령 수행, 키보드로 입력 받은 키값 수행 )  
 
 ## [v3.0] 멀티플레이 요구사항 (서버에서 게임 로직 처리)  
-완료  
+TcpSocketServer 로 구현 및 로직 이관 완료    
 ## [v3.1] WebSocket 서버  
 WebSocket 응답 서버 구현 완료   
 client html,js 코드 구현 완료    
