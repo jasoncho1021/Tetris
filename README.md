@@ -43,7 +43,7 @@ Java NIO server
 ## [v3.0] 멀티플레이 요구사항 (서버에서 게임 로직 처리)  
 TcpSocketServer 로 구현 및 로직 이관 완료    
 ## [v3.1] WebSocket 서버  
-WebSocket 응답 서버 구현 완료   
+추가 포트 할당하여 WebSocket 응답 서버 구현 완료   
 client html,js 코드 구현 완료    
 채팅 및 게임 플레이 정상 동작 확인 완료  
 ![ttris22](https://user-images.githubusercontent.com/12610035/136033620-45d1f3dd-ceec-4dfa-86e9-c26c29c1d77b.gif)
