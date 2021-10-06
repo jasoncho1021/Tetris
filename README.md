@@ -1,7 +1,7 @@
+## [v1.0] 게임 기본 요구사항  
 ![tetris2](https://user-images.githubusercontent.com/12610035/131299100-0bff9fd9-d7d6-4e7d-b3b4-5bfda6addf8f.gif)  
 * 회전시 벽이나 쌓여 있는 블럭 통과 안 하고 회전축 밀리도록 구현  
 
-## [v1.0] 게임 기본 요구사항  
 1. 생산자-소비자 큐 형태로 인풋 값 처리  
 https://github.com/jasoncho1021/Tetris/blob/main/queue/impl/InputQueue.java#L39  
 1-1. 생산자 둘 (1초 마다 DOWN 키값 입력하는 스레드, 콘솔 입력 스레드), 소비자 하나 (main 스레드)  
