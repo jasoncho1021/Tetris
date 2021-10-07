@@ -1,4 +1,4 @@
-## [v1.0] 게임 기본 요구사항  
+## [v1.0] 기본 게임  
 ![tetris2](https://user-images.githubusercontent.com/12610035/131299100-0bff9fd9-d7d6-4e7d-b3b4-5bfda6addf8f.gif)  
 * 회전시 벽이나 쌓여 있는 블럭 통과 안 하고 회전축 밀리도록 구현  
 
@@ -18,7 +18,7 @@ https://github.com/jasoncho1021/Tetris/blob/main/TetrisGame.java#L53
 4-1. enter 키 없이 바로 키값 입력 받을 수 있도록 쉘 옵션 설정  
 4-2. 매번 동일한 위치에서 게임 화면 갱신될 수 있도록 쉘에 출력된 행 삭제하는 쉘 스크립트 작성 및 자바프로그램에서 실행  
 
-## [v2.0] 멀티플레이 요구사항 (클라이언트에서 게임 로직 처리)
+## [v2.0] 멀티플레이 (클라이언트에서 게임 로직 처리)
 Java NIO server  
 
 * 접속 Phase  
@@ -38,8 +38,9 @@ Java NIO server
 2-2. 상대방은 밑에 새로운 줄이 깔림  
 2-3. Job 큐 구현하여 멀티스레드 요청 Job 순서대로 처리 ( Job : 서버로부터 수신한 한줄 깔기 명령 수행, 키보드로 입력 받은 키값 수행 )  
 
-## [v3.0] 멀티플레이 요구사항 (서버에서 게임 로직 처리)  
+## [v3.0] 멀티플레이 (서버에서 게임 로직 처리)  
 TcpSocketServer 로 구현 및 로직 이관 완료    
+
 ## [v3.1] WebSocket 서버  
 1. 포트 추가하여 WebSocket handshake 서버 구현 완료   
 2. client html,js 코드 구현 완료    
