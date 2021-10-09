@@ -16,6 +16,7 @@ public class WebSocketServer implements Runnable{
 
 	void runServer() throws IOException, NoSuchAlgorithmException {
 		ServerSocket server = new ServerSocket(8099);
+		System.out.println("WS 서버가 시작되었습니다.");
 		try {
 			while (true) {
 				Socket socket = server.accept();
