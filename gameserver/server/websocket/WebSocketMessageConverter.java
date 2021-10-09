@@ -15,6 +15,7 @@ public class WebSocketMessageConverter implements MessageConverter {
 
 	public WebSocketMessageConverter(Socket socket) {
 		this.socket = socket;
+		System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "]" + "에서 접속하였습니다.");
 		try {
 			this.in = socket.getInputStream();
 			this.out = socket.getOutputStream();

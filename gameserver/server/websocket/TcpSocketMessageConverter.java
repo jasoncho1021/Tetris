@@ -14,6 +14,7 @@ public class TcpSocketMessageConverter implements MessageConverter {
 
 	public TcpSocketMessageConverter(Socket socket) {
 		this.socket = socket;
+		System.out.println("[" + socket.getInetAddress() + ":" + socket.getPort() + "]" + "에서 접속하였습니다.");
 		try {
 			this.in = new DataInputStream(socket.getInputStream());
 			this.out = new DataOutputStream(socket.getOutputStream());

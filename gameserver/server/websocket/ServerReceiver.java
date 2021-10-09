@@ -88,7 +88,7 @@ public class ServerReceiver extends Thread {
 			return true;
 		}
 
-		sendToAll("ss:" + nameMsg);
+		sendToAll(nameMsg);
 		return true;
 	}
 
