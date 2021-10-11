@@ -43,7 +43,7 @@ Java NIO server
 TcpSocketServer 구현 및 로직 이관 완료    
 * AttackRequestQueue 는 Singleton 패턴으로 생성되며 멀티스레드(게임) 간에 공유된다.  
 
-![Screenshot from 2021-10-11 19-30-07](https://user-images.githubusercontent.com/12610035/136775768-2b24af4f-6558-47b0-a605-af5b2fe526f9.png)  
+![Screenshot from 2021-10-11 19-47-57](https://user-images.githubusercontent.com/12610035/136778100-9c6acde0-1508-4f01-ba4f-80a308702745.png)  
 
 
 ## [v3.1] WebSocket 서버  
