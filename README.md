@@ -46,7 +46,7 @@ TcpSocketServer 구현 및 로직 이관 완료
 * AttackRequestQueue 는 Singleton 패턴으로 생성되며 멀티스레드(게임) 간에 공유된다  
 * AttackListener 스레드는 '한 줄 추가' job 을 게임 스레드들에게 브로드캐스팅한다  
 
-![Screenshot from 2021-10-11 20-02-58](https://user-images.githubusercontent.com/12610035/136779924-db8e9163-bbcb-4f72-a41e-25b218f93af8.png)  
+![Screenshot from 2021-10-11 21-11-19](https://user-images.githubusercontent.com/12610035/136787913-218d9ef7-acf3-4f07-8afa-ef88a90bbd93.png)  
 
 
 ## [v3.1] WebSocket 서버  
