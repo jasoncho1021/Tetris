@@ -42,7 +42,7 @@ Java NIO server
 ## [v3.0] 멀티플레이 (서버에서 게임 로직 처리)  
 TcpSocketServer 구현 및 로직 이관 완료    
 * TetrisQueue 는 Producer 스레드와 ServerReceiver 스레드로부터 키보드 인풋 값을 받는다  
-* Producer 스레드는 1초 마다 'DOWN' 키 값을 TetrisQueue 에 넣는다  
+* Producer 스레드는 1초 마다 'DOWN' 키 값을 TetrisQueue 에 넣는다. 게임 종료 시에는 interrupt() 호출로 즉각 Thread.sleep()을 벗어난다  
 * AttackRequestQueue 는 Singleton 패턴으로 생성되며 멀티스레드(게임) 간에 공유된다  
 * AttackListener 스레드는 '한 줄 추가' job 을 게임 스레드들에게 브로드캐스팅한다  
 
