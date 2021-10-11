@@ -42,6 +42,9 @@ Java NIO server
 ## [v3.0] 멀티플레이 (서버에서 게임 로직 처리)  
 TcpSocketServer 구현 및 로직 이관 완료    
 
+![Screenshot from 2021-10-11 19-30-07](https://user-images.githubusercontent.com/12610035/136775768-2b24af4f-6558-47b0-a605-af5b2fe526f9.png)  
+
+
 ## [v3.1] WebSocket 서버  
 1. 포트 추가하여 WebSocket handshake 서버 구현 완료   
 2. client html,js 코드 구현 완료    
