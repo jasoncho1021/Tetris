@@ -47,5 +47,8 @@ TcpSocketServer 구현 및 로직 이관 완료
 2. client html,js 코드 구현 완료    
 3. 채팅 및 게임 플레이(공격기능) 동작 확인 완료  
 
-![ttris22](https://user-images.githubusercontent.com/12610035/136033620-45d1f3dd-ceec-4dfa-86e9-c26c29c1d77b.gif)
+![ttris22](https://user-images.githubusercontent.com/12610035/136033620-45d1f3dd-ceec-4dfa-86e9-c26c29c1d77b.gif)  
+
+![Screenshot from 2021-10-11 19-10-38](https://user-images.githubusercontent.com/12610035/136773277-b6194b33-58b0-41b7-8422-1f2d5504e696.png)
+
 
